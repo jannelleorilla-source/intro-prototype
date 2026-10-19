@@ -522,7 +522,7 @@ body.is-activate .proto .tapcon{color:#121212;opacity:.6}
 
 <header class="proto">
   <div class="in">
-    <span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span>
+    <a class="wmk" id="siteLink" href="#" title="intro.ph, the INTRO website" style="display:inline-flex"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO website"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></a>
     <nav id="protonav">
       <a href="#activate" data-r="activate"><i>1</i>Activate</a>
       <a href="#studio" data-r="studio"><i>2</i>Set up in Studio</a>
@@ -555,7 +555,11 @@ const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelect
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clone=o=>JSON.parse(JSON.stringify(o));
 const uid=()=>Math.random().toString(36).slice(2,9);
-const RESOLVER='intro.ph'; // placeholder host until the domain is live; path scheme /t/<code> matches the website and print templates
+const RESOLVER='intro.ph'; // the printed tap address host (see decisions-and-facts/domain-map.md); path scheme /t/<code>
+// The website (main domain). Switches to https://intro.ph automatically once Studio runs on studio.intro.ph.
+const SITE_URL=/(^|\.)intro\.ph$/.test(location.hostname)?'https://intro.ph':'https://site--intro-website-test.netlify.app';
+// A tap address opened on this host (/t/<code> or /p/<pcode>, forwarded by 404.html as ?t= / ?p=)
+const TAP=(()=>{try{const q=new URLSearchParams(location.search);const t=(q.get('t')||'').toUpperCase(),p=(q.get('p')||'').toUpperCase();if(!t&&!p)return null;history.replaceState(null,'',location.pathname+location.hash);return {t:/^[0-9A-HJKMNP-TV-Z]{8}$/.test(t)?t:'',p:/^[0-9A-HJKMNP-TV-Z]{8}$/.test(p)?p:''}}catch{return null}})();
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2200)}
 function get(o,p){return p.split('.').reduce((a,k)=>a==null?a:a[k],o)}
 function set(o,p,v){const ks=p.split('.');let a=o;for(const k of ks.slice(0,-1)){if(a[k]==null)a[k]={};a=a[k]}a[ks.at(-1)]=v}
@@ -779,7 +783,7 @@ function renderProfile(c,opts={}){
       ${linksHtml}
     </div>
     <div class="tabbar"><button type="button" data-home>${ICON.home}Home</button><button type="button" data-qrsheet="${RESOLVER}/p/${esc(opts.pcode||'')}">${ICON.qr}QR code</button><button type="button" data-save>${ICON.save}Save contact</button><span class="mini"${avStyle}>${c.photo?'':initials(c.name)}</span></div>
-    <div class="ft"><span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span><a href="#tap">Report</a></div>
+    <div class="ft"><a class="wmk" href="${SITE_URL}" target="_blank" rel="noopener" title="Get your own INTRO"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></a><a href="#tap">Report</a></div>
   </div>`;
 }
 function renderOutcome(kind,dev,c){
@@ -886,7 +890,7 @@ function viewActivate(h){
   const bar=`<div class="steps" aria-hidden="true">${STEPS.slice(1).map((s,j)=>`<i class="${j<i?'done':''}"></i>`).join('')}</div>`;
   const card=inner=>`<div class="flow">${bar}<div class="card">${inner}</div></div>`;
   switch(A.step){
-    case 'landing':{const P=A.prep;const first=P?esc((P.name||'').trim().split(/\s+/)[0]||'you'):'';const code=P&&P.code?esc(P.code):'4PZ9M7KQ';
+    case 'landing':{const P=A.prep;const first=P?esc((P.name||'').trim().split(/\s+/)[0]||'you'):'';const code=P&&P.code?esc(P.code):(TAP&&TAP.t?TAP.t:'4PZ9M7KQ');
       const h1=P?(P.liveNow?`This INTRO is live<br><mark>for ${first}.</mark>`:`This INTRO is ready<br><mark>for ${first}.</mark>`):`This INTRO<br><mark>isn’t set up yet.</mark>`;
       const lede=P?`${esc(P.by||'INTRO')} set it up for you${P.liveNow?', and it already works when tapped':''}. Sign in with your email to check it, change anything and ${P.liveNow?'take control of it':'go live'}. About a minute.`:`If it’s yours, set it up now. It takes about two minutes. You’ll need the setup code printed under the seal of the insert in your box.`;
       const primary=P?`<button class="btn wide" data-go="email">It’s mine. Sign me in →</button>`:`<button class="btn wide" data-go="code">I own this INTRO. Set it up →</button>`;
@@ -896,7 +900,7 @@ function viewActivate(h){
       return `<div class="flow landing">${bar}<div class="herocard"><img src="brand/card-hero.jpg" alt="INTRO card resting on a phone"></div><div class="lbody"><p class="lbl">${RESOLVER}/t/${code}</p><h1>${h1}</h1><p class="lede">${lede}</p>
       <div class="stack">${primary}<a class="btn ghost wide" href="#tap">Someone handed it to me</a></div>
       <hr class="hr">${info}
-      <p class="footnote">Activation always starts from the tapped card.<br>There is no way to claim an INTRO by typing a code on the website alone.<br><span style="display:inline-block;margin-top:8px">${demo}</span></p></div></div>`}
+      <p class="footnote">Activation always starts from the tapped card.<br>There is no way to claim an INTRO by typing a code on the website alone.<br><a href="${SITE_URL}/how-it-works#studio" style="color:inherit">New to INTRO? How it works</a><br><span style="display:inline-block;margin-top:8px">${demo}</span></p></div></div>`}
     case 'code':return card(`<p class="lbl">${stepLbl('code')}</p><h1 style="margin-top:8px">Enter the setup code</h1><p class="lede">Fifteen digits, printed under the seal of your insert. It isn’t on the card itself, so a card alone can’t be claimed by a stranger.</p>
       <div class="field"><label for="c0">Setup code</label><div class="codein"><input id="c0" inputmode="numeric" maxlength="5" placeholder="•••••" value="${esc(A.code[0])}"><span>–</span><input id="c1" inputmode="numeric" maxlength="5" placeholder="•••••" value="${esc(A.code[1])}"><span>–</span><input id="c2" inputmode="numeric" maxlength="5" placeholder="•••••" value="${esc(A.code[2])}"></div>${A.errors.code?`<p class="err">${A.errors.code}</p>`:'<p class="hint">Checked on our side. No expiry. Five wrong tries pauses this card for an hour.</p>'}</div>
       <div class="row" style="margin-top:18px"><button class="btn" data-check="code">Continue</button><button class="btn quiet" data-demo="code">Use the demo code</button></div>
@@ -945,7 +949,7 @@ function viewSignin(){return `<div class="flow" style="max-width:460px"><div cla
   ${L.step==='email'?`<h1>Sign in</h1><p class="lede" style="margin-top:8px">Enter the email you used when you activated your INTRO. We’ll send a one-time code. No password.</p>
     <div class="field"><label for="l-em">Email</label><input id="l-em" type="email" autocomplete="email" placeholder="you@example.ph" value="${esc(L.email)}" data-focus></div>
     <div class="row" style="margin-top:18px"><button class="btn" data-login="code">Send code</button></div>
-    <div class="sect small muted">First time here? There’s nothing to register. Tap your new INTRO with your phone and it walks you through activation. <a href="#activate" style="color:inherit;font-weight:700">Set up a card →</a></div>`:''}
+    <div class="sect small muted">First time here? There’s nothing to register. Tap your new INTRO with your phone and it walks you through activation. <a href="#activate" style="color:inherit;font-weight:700">Set up a card →</a><br><br>Don’t have an INTRO yet? <a href="${SITE_URL}/products" style="color:inherit;font-weight:700">Shop at intro.ph →</a></div>`:''}
   ${L.step==='code'?`<h1>Check your email</h1><p class="lede" style="margin-top:8px">We sent an 8-digit code to <b>${esc(L.email)}</b>. It works for 10 minutes.</p>
     <div class="field otp"><label for="l-otp">Sign-in code</label><input id="l-otp" inputmode="numeric" maxlength="8" placeholder="········" data-focus></div>
     <div class="inbox"><b>Prototype only · your inbox</b>From INTRO: Your sign-in code is <span class="code">${L.sent}</span>.</div>
@@ -961,7 +965,7 @@ function viewStudio(h){
   const nav=[['profile','Profile','user'],['intros','Introductions','chart'],['share','Share','share'],['devices','My INTROs','card'],['settings','Account','gear']];
   const rail=`<aside class="rail"><div class="who"><div class="row" style="gap:10px;margin-bottom:14px"><span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span><span class="lbl" style="font-size:10px">Studio</span></div><div class="nm">${esc(d.name||'Your profile')}</div><div class="em" title="${esc(S.account.loginEmail)}">${esc(S.account.loginEmail)}</div></div>
     ${nav.map(([k,l,ic])=>`<a href="#studio-${k}" class="${(page===k||(page==='home'&&k==='profile'))?'on':''}">${ICON[ic]}<span>${l}</span>${k==='profile'&&dirty?'<span class="cnt">draft</span>':''}</a>`).join('')}
-    <div class="foot">Signed in with a one-time code.<br><a href="#studio" data-set="signout">Sign out</a></div></aside>`;
+    <div class="foot"><a href="${SITE_URL}/products" target="_blank" rel="noopener">Get another INTRO ↗</a><br><a href="${SITE_URL}/faq#studio" target="_blank" rel="noopener">Help</a><br><br>Signed in with a one-time code.<br><a href="#studio" data-set="signout">Sign out</a></div></aside>`;
   const body={home:studioProfile,profile:studioProfile,intros:studioIntros,devices:studioDevices,share:studioShare,settings:studioSettings}[page]||studioProfile;
   return `<div class="wrap studio">${rail}<section class="main">${body()}</section></div>`;
 }
@@ -1207,6 +1211,13 @@ document.addEventListener('dragend',()=>{dragFrom=null;$$('.lrow.dragging,.lrow.
 
 if(!location.hash)location.hash='#activate';else if(location.hash==='#studio-home')location.hash='#studio-profile';
 if(location.hash.startsWith('#view'))document.body.classList.add('is-view');
+(function routeTap(){if(!TAP)return;const prep=readPrep();const live=c=>c&&((S.profile.pcode===c&&S.profile.status==='published')||(S.devices||[]).some(d=>d.code===c&&d.state==='active'&&S.profile.status==='published'));
+  let want='#activate';
+  if(TAP.p)want=(TAP.p===S.profile.pcode&&S.profile.status!=='hidden')?'#view':'#activate';
+  else if(prep&&prep.code===TAP.t)want=prep.liveNow?'#view':'#activate';
+  else if(live(TAP.t))want='#view';
+  if(location.hash!==want)history.replaceState(null,'',location.pathname+want)})();
+document.getElementById('siteLink').href=SITE_URL;
 route();
 </script>
 

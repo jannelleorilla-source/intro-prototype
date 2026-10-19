@@ -145,6 +145,7 @@ tr:last-child td{border-bottom:0} td.num,th.num{text-align:right;font-variant-nu
   <span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span>
   <span class="tag">Console · internal</span>
   <a class="lnk" href="./#activate">Customer side ↗</a>
+  <a class="lnk" href="#" id="deskLink" target="_blank" rel="noopener" title="Website order desk: chat and walk-in orders, GCash payments, enquiries">Order desk ↗</a>
   <span class="note">Interface prototype · 19 Oct 2026 · mock data, nothing leaves this page</span>
   <button class="reset" id="themeBtn" type="button" title="Day, night or follow the device">◐ Auto</button>
     <button class="reset" id="resetBtn" type="button">Reset demo</button>
@@ -253,6 +254,7 @@ function route(){
   $$('[data-focus]').forEach(e=>e.focus());
 }
 window.addEventListener('hashchange',route);
+const SITE_URL=/(^|\.)intro\.ph$/.test(location.hostname)?'https://intro.ph':'https://site--intro-website-test.netlify.app';try{document.getElementById('deskLink').href=SITE_URL+'/admin'}catch{}
 let PREP=null;
 function prepModal(o){return `<div data-prep="1"><h2>Set up ${esc(o.customer)}’s page</h2><p class="small muted" style="margin:4px 0 14px">Paste what they sent you in chat. They can change all of it later in INTRO Studio.</p><div class="stack">${prepFields(PREP,false).replace(/class="card"/g,'class="card flat"')}
   <div class="grid2"><div class="field"><label for="p-name">Name on the page</label><input id="p-name" data-q="name" value="${esc(PREP.name)}"></div><div class="field"><label for="p-role">What they do</label><input id="p-role" data-q="role" value="${esc(PREP.role)}"></div><div class="field"><label for="p-mob">Mobile</label><input id="p-mob" data-q="mobile" value="${esc(PREP.mobile)}"></div><div class="field"><label for="p-em">Their sign-in email</label><input id="p-em" data-q="email" value="${esc(PREP.email)}"></div></div>
