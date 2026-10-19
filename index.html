@@ -897,7 +897,10 @@ function viewActivate(h){
   const bar=`<div class="steps" aria-hidden="true">${STEPS.slice(1).map((s,j)=>`<i class="${j<i?'done':''}"></i>`).join('')}</div>`;
   const card=inner=>`<div class="flow">${bar}<div class="card">${inner}</div></div>`;
   switch(A.step){
-    case 'landing':{const P=A.prep;const NC=!P&&noCode();const first=P?esc((P.name||'').trim().split(/\s+/)[0]||'you'):'';const code=esc(cardCode());
+    case 'landing':{const P=A.prep;const ST=readStock()[cardCode()]||null;
+      if(!P&&ST&&ST.claimed)return card(`<p class="lbl">${RESOLVER}/t/${esc(cardCode())}</p><h1 style="margin-top:8px">This INTRO is already set up.</h1><p class="lede">It belongs to someone now. If it’s yours, sign in to change your page.</p><div class="stack"><a class="btn wide" href="#signin">Sign in →</a><a class="btn ghost wide" href="${SITE_URL}/contact">Bought it and this looks wrong? Contact INTRO</a></div>`);
+      if(!P&&ST&&ST.protect===false&&!ST.ready)return card(`<p class="lbl">${RESOLVER}/t/${esc(cardCode())}</p><h1 style="margin-top:8px">This INTRO isn’t ready yet.</h1><p class="lede">It hasn’t been written and checked by INTRO, so it can’t be set up. If you just bought it, contact the seller.</p><div class="stack"><a class="btn ghost wide" href="${SITE_URL}/contact">Contact INTRO</a></div>`);
+      const NC=!P&&noCode();const first=P?esc((P.name||'').trim().split(/\s+/)[0]||'you'):'';const code=esc(cardCode());
       const h1=NC?`Your new INTRO.<br><mark>Let’s set it up.</mark>`:P?(P.liveNow?`This INTRO is live<br><mark>for ${first}.</mark>`:`This INTRO is ready<br><mark>for ${first}.</mark>`):`This INTRO<br><mark>isn’t set up yet.</mark>`;
       const lede=NC?`It takes about a minute: your email, the 8-digit code we send you, then your name, socials and a look. No setup code needed for this card.`:P?`${esc(P.by||'INTRO')} set it up for you${P.liveNow?', and it already works when tapped':''}. Sign in with your email to check it, change anything and ${P.liveNow?'take control of it':'go live'}. About a minute.`:`If it’s yours, set it up now. It takes about two minutes. You’ll need the setup code printed under the seal of the insert in your box.`;
       const primary=NC?`<button class="btn wide" data-go="email">Set it up →</button>`:P?`<button class="btn wide" data-go="email">It’s mine. Sign me in →</button>`:`<button class="btn wide" data-go="code">I own this INTRO. Set it up →</button>`;
@@ -907,14 +910,14 @@ function viewActivate(h){
       return `<div class="flow landing">${bar}<div class="herocard"><img src="brand/card-hero.jpg" alt="INTRO card resting on a phone"></div><div class="lbody"><p class="lbl">${RESOLVER}/t/${code}</p><h1>${h1}</h1><p class="lede">${lede}</p>
       <div class="stack">${primary}<a class="btn ghost wide" href="#tap">Someone handed it to me</a></div>
       <hr class="hr">${info}
-      <p class="footnote">Activation always starts from the tapped card.<br>There is no way to claim an INTRO by typing a code on the website alone.<br><a href="${SITE_URL}/how-it-works#studio" style="color:inherit">New to INTRO? How it works</a><br><span style="display:inline-block;margin-top:8px">${demo}</span></p></div></div>`}
+      <p class="footnote">${NC?'This card was sold without a setup code, so it belongs to whoever sets it up first.<br>If it isn’t yours, please don’t set it up: contact the seller.':'Activation always starts from the tapped card.<br>There is no way to claim an INTRO by typing a code on the website alone.'}<br><a href="${SITE_URL}/how-it-works#studio" style="color:inherit">New to INTRO? How it works</a><br><span style="display:inline-block;margin-top:8px">${demo}</span></p></div></div>`}
     case 'code':return card(`<p class="lbl">${stepLbl('code')}</p><h1 style="margin-top:8px">Enter the setup code</h1><p class="lede">Fifteen digits, printed under the seal of your insert. It isn’t on the card itself, so a card alone can’t be claimed by a stranger.</p>
       <div class="field"><label for="c0">Setup code</label><div class="codein"><input id="c0" inputmode="numeric" maxlength="5" placeholder="•••••" value="${esc(A.code[0])}"><span>–</span><input id="c1" inputmode="numeric" maxlength="5" placeholder="•••••" value="${esc(A.code[1])}"><span>–</span><input id="c2" inputmode="numeric" maxlength="5" placeholder="•••••" value="${esc(A.code[2])}"></div>${A.errors.code?`<p class="err">${A.errors.code}</p>`:'<p class="hint">Checked on our side. No expiry. Five wrong tries pauses this card for an hour.</p>'}</div>
       <div class="row" style="margin-top:18px"><button class="btn" data-check="code">Continue</button><button class="btn quiet" data-demo="code">Use the demo code</button></div>
       <div class="sect small muted"><b>Can’t find the code?</b> It’s on the folded insert, not the card or the box. If the seal was already broken when the box arrived, stop and message us before using the card.</div>`);
     case 'email':return card(`<p class="lbl">${stepLbl('email')}</p><h1 style="margin-top:8px">Where should we send your sign-in code?</h1><p class="lede">This is your private login email. It is never shown on your profile. You can show a different, public contact email later.</p>
       <div class="field"><label for="em">Login email</label><input id="em" type="email" autocomplete="email" placeholder="you@example.ph" value="${esc(A.email)}">${A.errors.email?`<p class="err">${A.errors.email}</p>`:''}</div>
-      <div class="row" style="margin-top:18px"><button class="btn" data-check="email">Send code</button><button class="btn quiet" data-go="code">Back</button></div>
+      <div class="row" style="margin-top:18px"><button class="btn" data-check="email">Send code</button><button class="btn quiet" data-go="${noCode()?'landing':'code'}">Back</button></div>
       <div class="sect small muted">No passwords. Each time you manage your INTRO we send a one-time 8-digit code to this address. If you already have an account with this email, the card is added to it.</div>`);
     case 'otp':return card(`<p class="lbl">${stepLbl('otp')}</p><h1 style="margin-top:8px">Enter the 8-digit code</h1><p class="lede">We sent it to <b>${esc(A.email)}</b>. It works for 10 minutes.</p>
       <div class="field otp"><label for="otp">Sign-in code</label><input id="otp" inputmode="numeric" maxlength="8" placeholder="········" value="${esc(A.otp)}">${A.errors.otp?`<p class="err">${A.errors.otp}</p>`:''}</div>
@@ -1148,9 +1151,9 @@ document.addEventListener('click',e=>{
   /* activation */
   if(ds.go){A.step=ds.go;A.errors={};A.lastWant=ds.go;if(location.hash!=='#activate-'+ds.go){location.hash='#activate-'+ds.go}else route();return}
   if(ds.demo==='code'){A.code=['12345','67890','12345'];route();return}
-  if(ds.demo==='prep'){e.preventDefault();const p={code:'MQ7P4K2X',name:'Marco Dela Cruz',role:'Realtor · Northpoint Realty',mobile:'+63 917 555 0199',email:'marco.dc@example.ph',socials:{instagram:'marco.sells.dipolog',facebook:'marcodelacruzrealty',tiktok:'marco.sells'},theme:'electric',photo:'',liveNow:true,by:'Jannelle at INTRO',at:new Date().toISOString()};try{localStorage.setItem('intro-prepared',JSON.stringify(p))}catch{}A=null;if(location.hash!=='#activate')location.hash='#activate';else route();toast('Demo: this card was set up by INTRO staff');return}
-  if(ds.demo==='unprep'){e.preventDefault();try{localStorage.removeItem('intro-prepared')}catch{}A=null;route();return}
-  if(ds.demo==='nocode'){e.preventDefault();const dc='7NCD9X2Q';try{const sm=readStock();sm[dc]={protect:false,demo:true};localStorage.setItem('intro-stock',JSON.stringify(sm));localStorage.removeItem('intro-prepared')}catch{}A=null;route();A.demoCode=dc;route();toast('Demo: a ready-to-sell card with no setup code');return}
+  if(ds.demo==='prep'){e.preventDefault();if(TAP){TAP.t='';TAP.p=''}const p={code:'MQ7P4K2X',name:'Marco Dela Cruz',role:'Realtor · Northpoint Realty',mobile:'+63 917 555 0199',email:'marco.dc@example.ph',socials:{instagram:'marco.sells.dipolog',facebook:'marcodelacruzrealty',tiktok:'marco.sells'},theme:'electric',photo:'',liveNow:true,by:'Jannelle at INTRO',at:new Date().toISOString()};try{localStorage.setItem('intro-prepared',JSON.stringify(p))}catch{}A=null;if(location.hash!=='#activate')location.hash='#activate';else route();toast('Demo: this card was set up by INTRO staff');return}
+  if(ds.demo==='unprep'){e.preventDefault();if(TAP){TAP.t='';TAP.p=''}try{localStorage.removeItem('intro-prepared')}catch{}A=null;route();return}
+  if(ds.demo==='nocode'){e.preventDefault();if(TAP){TAP.t='';TAP.p=''}const dc='7NCD9X2Q';try{const sm=readStock();sm[dc]={protect:false,demo:true,ready:true};localStorage.setItem('intro-stock',JSON.stringify(sm));localStorage.removeItem('intro-prepared')}catch{}A=null;route();A.demoCode=dc;route();toast('Demo: a ready-to-sell card with no setup code');return}
   if(ds.soc){const so=A.setup.socials=A.setup.socials||{};if(so[ds.soc]===undefined){so[ds.soc]='';route();const el=$(`input[data-soc-v="${ds.soc}"]`);if(el)el.focus()}else if(!so[ds.soc].trim()){delete so[ds.soc];route()}else{const el=$(`input[data-soc-v="${ds.soc}"]`);if(el)el.focus()}return}
   if(ds.stheme&&PALETTES[ds.stheme]){A.setup.theme=ds.stheme;route();return}
   if(ds.socRm){delete A.setup.socials[ds.socRm];route();const b=$(`.socchip[data-soc="${ds.socRm}"]`);if(b)b.focus();return}
@@ -1237,6 +1240,7 @@ if(location.hash.startsWith('#view'))document.body.classList.add('is-view');
   else if(TAP.p){if(TAP.p===S.profile.pcode&&S.profile.status!=='hidden')want='#view';else{TAPMISS=true;want='#start'}}
   else if(prep&&prep.code===TAP.t)want=prep.liveNow?'#view':'#activate';
   else if(live(TAP.t))want='#view';
+  else if((readStock()[TAP.t]||{}).claimed)want='#activate';
   if(location.hash!==want)history.replaceState(null,'',location.pathname+want)})();
 document.getElementById('siteLink').href=SITE_URL;
 route();
