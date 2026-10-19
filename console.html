@@ -92,6 +92,11 @@ tr:last-child td{border-bottom:0} td.num,th.num{text-align:right;font-variant-nu
 .steps{display:flex;gap:4px;flex-wrap:wrap} .steps span{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--rule);color:var(--fg-3)} .steps span.done{background:var(--fg);color:var(--ground);border-color:var(--fg)} .steps span.cur{border-color:var(--fg);color:var(--fg);font-weight:700}
 .timeline{display:grid;gap:0} .timeline div{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12.5px} .timeline div:last-child{border-bottom:0} .timeline .t{color:var(--fg-2);font-variant-numeric:tabular-nums}
 
+/* ready-to-sell */
+.stocksteps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px} .stocksteps div{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:12px 14px} .stocksteps span{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--fg);color:var(--ground);font-size:12px;font-weight:700} .stocksteps b{display:block;margin-top:8px;font-size:14px} .stocksteps p{font-size:12.5px;color:var(--fg-2);margin-top:2px}
+@media (max-width:820px){.stocksteps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stockcounts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px} .stockcounts div{background:var(--chip);border-radius:12px;padding:12px} .stockcounts b{display:block;font-size:24px;font-family:var(--serif);font-weight:500} .stockcounts span{font-size:12px;color:var(--fg-2)}
+.pill.st-towrite i{background:var(--warn)} .pill.st-ready i{background:var(--info)} .pill.st-sold i{background:var(--bronze)} .pill.st-claimed i{background:var(--good)}
 /* quick setup */
 .inbox{background:var(--chip);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5;overflow-wrap:anywhere} .inbox .code{white-space:normal;overflow-wrap:anywhere} .inbox b{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);margin-bottom:4px}
 .quickcta{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:16px;background:var(--chip)}
@@ -247,7 +252,7 @@ function route(){
   const h=(location.hash||'#dash').slice(1);
   if(!S.staff&&h!=='signin'){location.hash='#signin';return}
   const [page,...rest]=h.split('-');const arg=rest.join('-');
-  const V={signin:vSignin,quick:vQuick,dash:vDash,orders:vOrders,order:vOrder,production:vProduction,batch:vBatch,print:vPrint,devices:vDevices,device:vDevice,customers:vCustomers,customer:vCustomer,reports:vReports,system:vSystem,codes:vCodes};
+  const V={signin:vSignin,quick:vQuick,stock:vStock,dash:vDash,orders:vOrders,order:vOrder,production:vProduction,batch:vBatch,print:vPrint,devices:vDevices,device:vDevice,customers:vCustomers,customer:vCustomer,reports:vReports,system:vSystem,codes:vCodes};
   const fn=V[page]||vDash;
   $('#app').innerHTML=page==='signin'?fn():shell(page,fn(arg));
   window.scrollTo(0,0);
@@ -270,7 +275,7 @@ $('#resetBtn').addEventListener('click',()=>{S=seed();save();A={step:'email',ema
 function shell(page,body){
   const openReports=S.reports.filter(r=>r.status==='open').length;
   const inProd=S.devices.filter(d=>PROD_STEPS.includes(d.state)&&d.state!=='released').length;
-  const nav=[['quick','⚡ Quick setup'],['dash','Dashboard'],['orders','Orders',S.orders.filter(o=>o.status==='new').length],['production','Production',inProd],['devices','Devices'],['customers','Customers'],['reports','Reports',openReports,'hot'],['codes','Codes & QR'],['system','System']];
+  const nav=[['quick','⚡ Quick setup'],['stock','Ready-to-sell cards',S.devices.filter(d=>d.stock&&!d.sold&&d.state==='allocated').length],['dash','Dashboard'],['orders','Orders',S.orders.filter(o=>o.status==='new').length],['production','Production',inProd],['devices','Devices'],['customers','Customers'],['reports','Reports',openReports,'hot'],['codes','Codes & QR'],['system','System']];
   const pg=page==='order'?'orders':page==='batch'||page==='print'?'production':page==='device'?'devices':page==='customer'?'customers':page;
   return `<div class="wrap console"><aside class="rail"><div class="who"><span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span> <span class="lbl" style="font-size:9.5px;margin-left:6px">Console</span><div class="nm">${esc(S.staff.name)}</div><div class="rl">${ROLES[S.staff.role].name} · MFA ${S.staff.mfa?'on':'off'}</div></div>
     ${nav.map(([k,l,c,hot])=>`<a href="#${k}" class="${pg===k?'on':''}">${l}${c?`<span class="cnt ${hot?'hot':''}">${c}</span>`:''}</a>`).join('')}
@@ -297,7 +302,7 @@ function vDash(){
   const max=Math.max(1,...Object.values(counts));
   const open=S.reports.filter(r=>r.status==='open');
   return `<div class="head"><div><p class="lbl">Dashboard</p><h1>Good ${new Date().getHours()<12?'morning':'day'}, ${esc(S.staff.name.split(' ')[0])}.</h1><p>${S.orders.filter(o=>o.status==='new').length} new order${S.orders.filter(o=>o.status==='new').length===1?'':'s'} · ${S.devices.filter(d=>PROD_STEPS.includes(d.state)&&d.state!=='released').length} devices in production · ${open.length} open report${open.length===1?'':'s'}</p></div></div>
-  <div class="card quickcta"><div><h3>Quick setup · 2 to 5 minutes</h3><p class="small muted" style="margin-top:4px">Customer in front of you or in Messenger? Type their details, pick a look, write the card, done. No printing, no sealing.</p></div><a class="btn" href="#quick">Start a quick setup →</a></div>
+  <div class="card quickcta"><div><h3>Quick setup · 2 to 5 minutes</h3><p class="small muted" style="margin-top:4px">Customer in front of you or in Messenger? Type their details, pick a look, write the card, done. No printing, no sealing.</p></div><div class="row"><a class="btn" href="#quick">Start a quick setup →</a><a class="btn ghost" href="#stock">Cards for Shopee and stock</a></div></div>
   <div class="dash">
     <div class="card"><h3>Devices by state</h3><p class="small muted" style="margin-bottom:12px">Every INTRO ever produced, excluding canaries.</p><div class="bars">${STATES.filter(s=>counts[s]).map(s=>`<div><span>${STATE_LABEL[s]}</span><i style="width:${Math.round(counts[s]/max*100)}%"></i><span class="num">${counts[s]}</span></div>`).join('')}</div></div>
     <div class="card"><h3>Public path health</h3><p class="small muted" style="margin-bottom:12px">Canary devices, one per resolver outcome, tapped by a monitor every 5 minutes. Last check ${ago(S.canaries.checkedAt)}.</p><div class="canary">${Object.entries(S.canaries.states).map(([k,v])=>`<span><i style="background:${v==='ok'?'var(--good)':'var(--bad)'}"></i>${k}</span>`).join('')}</div><p class="small muted" style="margin-top:12px">Nightly encrypted backup: ${fmt(S.canaries.backup)}. Restore drill: due monthly.</p></div>
@@ -366,6 +371,50 @@ function quickSave(){const q=Q;if(!q.name.trim()){toast('Their name is needed');
   QDONE={...o.prepared,orderId:id};Q=blankPrep();route();toast(q.liveNow?'Saved. Page is live. Now write the card.':'Saved. Now write the card.');
 }
 
+
+/* ---------- ready-to-sell cards (Shopee, TikTok Shop, Lazada, walk-in stock) ---------- */
+const STOCK_SKUS=['card','keychain','photostrip'];
+const stockMap=()=>{try{return JSON.parse(localStorage.getItem('intro-stock')||'{}')}catch{return {}}};
+const saveStockMap=m=>{try{localStorage.setItem('intro-stock',JSON.stringify(m))}catch{}};
+const stockAddr=code=>SITE_URL+'/t/'+code;
+function stockStatus(d,m){const x=m[d.code]||{};
+  if(x.claimed||d.state==='active')return ['claimed','Set up by buyer'+(x.claimed&&x.claimed.email?' · '+mask(x.claimed.email):'')];
+  if(d.sold)return ['sold','Sold · '+esc(d.sold.channel)+(d.sold.ref?' '+esc(d.sold.ref):'')];
+  if(d.state==='allocated'||d.state==='encoded')return ['towrite','To write'];
+  return ['ready','Ready to sell']}
+function vStock(){
+  const m=stockMap();const ds=S.devices.filter(d=>d.stock);const bs=S.batches.filter(b=>b.stock).slice().reverse();
+  const cnt=k=>ds.filter(d=>stockStatus(d,m)[0]===k).length;
+  return `<div class="head"><div><p class="lbl">Ready-to-sell cards</p><h1>Cards that set themselves up.</h1><p>For Shopee, TikTok Shop, Lazada and walk-in stock. You don’t need the buyer’s name or email: write a card, pack it for any order, and the buyer sets it up when they tap it.</p></div></div>
+  <div class="stocksteps">${[['1','Make cards','Pick how many.'],['2','Write each card','Hold it to the phone. One tap each.'],['3','Print inserts','Only if you use setup codes.'],['4','Pack any card','For any order, any buyer.'],['5','Buyer taps','They set it up themselves.']].map(([n,t,d])=>`<div><span>${n}</span><b>${t}</b><p>${d}</p></div>`).join('')}</div>
+  <div class="grid3" style="margin-top:16px">
+    <div class="card"><h3>Make cards</h3>
+      <div class="grid2" style="margin-top:10px"><div class="field"><label for="st-q">How many</label><input id="st-q" type="number" min="1" max="50" value="10"></div><div class="field"><label for="st-sku">Product</label><select id="st-sku">${STOCK_SKUS.filter(k=>SKUS[k]).map(k=>`<option value="${k}">${SKUS[k]}</option>`).join('')}</select></div></div>
+      <label class="switch" style="margin-top:14px"><input type="checkbox" id="st-protect" checked><span class="track"><i></i></span><span><b>Ask for a setup code</b><br><span class="small muted">Recommended. The buyer types the code from a small insert in the box, so nobody else who touches the card first (a courier, a family member) can claim it. Off: whoever taps it first sets it up, with no insert to print.</span></span></label>
+      <div class="row" style="margin-top:14px"><button class="btn" data-stockmake>Make cards</button></div></div>
+    <div class="card" style="grid-column:span 2"><h3>Stock</h3>
+      <div class="stockcounts">${[['towrite','To write'],['ready','Ready to sell'],['sold','Sold'],['claimed','Set up by buyer']].map(([k,l])=>`<div><b>${cnt(k)}</b><span>${l}</span></div>`).join('')}</div>
+      ${ds.length?'':'<p class="small muted" style="margin-top:10px">No ready-to-sell cards yet. Make some on the left.</p>'}</div>
+  </div>
+  ${bs.map(b=>{const bd=ds.filter(d=>d.batch===b.id);return `<div class="card" style="margin-top:16px"><div class="row between"><div><h3>${b.id} · ${bd.length} × ${SKUS[bd[0]?.sku]||'card'}</h3><p class="small muted">${fmtD(b.createdAt)} · ${b.protect?'Buyers enter a setup code from the insert':'No setup code: the first person to tap sets it up'}</p></div>
+    <div class="row"><a class="btn sm ghost" href="#print-qr-${b.id}">QR sheet</a>${b.protect?(b.sealed?'<span class="small muted">Inserts printed and sealed</span>':`<a class="btn sm ghost" href="#print-ins-${b.id}">Print inserts</a><button class="btn sm ghost" data-seal="${b.id}">Seal</button>`):`<a class="btn sm ghost" href="#print-ins-${b.id}">Print “tap to set up” cards</a>`}</div></div>
+    <div class="tbl" style="margin-top:12px"><table><thead><tr><th>Card</th><th>Address to write</th><th>Status</th><th></th></tr></thead><tbody>
+    ${bd.map(d=>{const [k,l]=stockStatus(d,m);return `<tr><td><a class="code" href="#device-${d.code}">${d.code}</a></td><td class="small" style="overflow-wrap:anywhere;max-width:340px">${esc(stockAddr(d.code))}</td><td><span class="pill st-${k}"><i></i>${l}</span></td>
+      <td><div class="row" style="justify-content:flex-end">${k==='towrite'?`<button class="btn sm" data-stockwrite="${d.code}">Write</button><button class="btn sm ghost" data-stockdone="${d.code}" title="Mark written, e.g. after using NFC Tools">Written ✓</button><button class="btn sm quiet" data-copyurl="${esc(stockAddr(d.code))}">Copy</button>`:k==='ready'?`<button class="btn sm ghost" data-stocksold="${d.code}">Mark sold</button>`:''}</div></td></tr>`}).join('')}
+    </tbody></table></div><p id="stock-res-${b.id}" class="small" style="margin-top:8px;min-height:1.2em"></p></div>`}).join('')}`;
+}
+async function stockMake(){if(!can('production')){toast('Production role needed');return}
+  const n=Math.max(1,Math.min(50,+($('#st-q').value)||1));const sku=$('#st-sku').value;const protect=$('#st-protect').checked;
+  const bid='B-'+String(S.seq.batch++).padStart(4,'0');const oid='STOCK-'+bid.slice(2);const t=now();const m=stockMap();
+  const b={id:bid,orderId:oid,createdAt:t,sealed:false,plain:{},stock:true,protect,printedQR:false};
+  S.orders.unshift({id:oid,channel:'Stock',ref:'ready-to-sell',customer:'Ready-to-sell stock',email:'',lines:[{sku,qty:n,pers:protect?'Setup code inserts':'No setup code'}],status:'in production',createdAt:t,batch:bid,notes:'Cards for marketplace and walk-in orders. Buyers set them up themselves.',stock:true});
+  for(let i=0;i<n;i++){let code;do{code=newDeviceCode()}while(dev(code));let hash='(no setup code: first tap claims)';
+    if(protect){const sc=newSetupCode();b.plain[code]=sc;hash=await setupHash(sc,code)}
+    S.devices.push({code,sku,state:'allocated',orderId:oid,batch:bid,setupHash:hash,rotations:0,owner:null,mode:'profile',lastTap:'',stock:true,protect,events:[['allocated',t]]});m[code]={protect}}
+  S.batches.push(b);saveStockMap(m);log('stock.make',bid,`${n} × ${SKUS[sku]} · ${protect?'setup code':'no code'}`);save();route();toast(`${n} cards made. Write each one, then they’re ready to sell.`)}
+function stockMark(code,state,detail){const d=dev(code);if(!d)return;setState(d,state,detail);const b=batch(d.batch);const bd=S.devices.filter(x=>x.batch===d.batch);
+  if(b&&bd.every(x=>x.state!=='allocated'&&x.state!=='encoded')){const o=order(b.orderId);if(o)o.status='in stock'}}
+
 /* ---------- orders ---------- */
 function vOrders(){
   return `<div class="head"><div><p class="lbl">Orders</p><h1>Production orders</h1><p>Orders arrive from Shopify, TikTok Shop or direct messages and are keyed in here with their external reference. The store never touches the resolver.</p></div><button class="btn" data-neworder>New order</button></div>
@@ -430,7 +479,10 @@ function vPrint(arg){const [kind,bid]=[arg.split('-')[0],arg.slice(arg.indexOf('
   if(kind==='qr')return `<div class="printbar"><a class="btn ghost sm" href="#batch-${b.id}">Back to batch</a><button class="btn sm" data-print>Print</button><span class="small muted">QR 18 mm, error correction M, 4-module quiet zone. Encodes <span class="code">https://${RESOLVER}/t/&lt;code&gt;</span>. Printing from this preview may be blocked; the local file prints normally.</span></div>
     <div class="sheet"><h2>QR sheet · ${b.id} · order ${b.orderId} · ${ds.length} devices</h2><div class="qrgrid">${ds.map(d=>`<div class="qrcell">${qrSvg(`https://${RESOLVER}/t/${d.code}`,3)}<span class="c">${d.code}</span><span class="s">${SKUS[d.sku]}</span></div>`).join('')}</div></div>`;
   if(b.sealed)return `<div class="printbar"><a class="btn ghost sm" href="#batch-${b.id}">Back to batch</a></div><div class="sheet"><h2>Inserts for ${b.id}</h2><p>This batch is sealed. Setup codes were purged after printing; only hashes remain. To reissue one insert, rotate that device’s code from its device page.</p></div>`;
-  return `<div class="printbar"><a class="btn ghost sm" href="#batch-${b.id}">Back to batch</a><button class="btn sm" data-print>Print</button><span class="small muted">Fold-and-seal inserts. One per box, matched at pack-verify. Codes shown once.</span></div>
+  if(b.stock&&!b.protect)return `<div class="printbar"><a class="btn ghost sm" href="#stock">Back to stock</a><button class="btn sm" data-print>Print</button><span class="small muted">“Tap to set up” cards. Any card goes with any box: there is no code to match.</span></div>
+    <div class="sheet"><h2>Tap-to-set-up cards · ${b.id} · ${ds.length}</h2><div class="insgrid">${ds.map(()=>`<div class="ins"><span class="t">Welcome to INTRO</span><span class="d" style="font-size:10pt;color:#222">1. Tap your INTRO on the top of your phone, or scan the QR on its back.<br>2. Enter your email and the 8-digit code we send you.<br>3. Add your details, pick a look, publish.</span><span class="d">Change your page anytime in INTRO Studio. No app, no monthly fee.</span><span class="f"><span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"></span><span>intro.ph</span></span></div>`).join('')}</div></div>`;
+  return `<div class="printbar"><a class="btn ghost sm" href="${b.stock?'#stock':'#batch-'+b.id}">Back</a><button class="btn sm" data-print>Print</button><span class="small muted">Fold-and-seal inserts. One per box, matched at pack-verify. Codes shown once.</span></div>
+    ${b.stock?'<div class="sheet" style="padding-top:0;margin-top:-10px"><p class="small" style="color:#444">Ready-to-sell batch: each insert names its card (bottom right). Pack each card with its own insert.</p></div>':''}
     <div class="sheet"><h2>Insert sheet · ${b.id} · ${ds.length} inserts</h2><div class="insgrid">${ds.map(d=>`<div class="ins"><span class="t">Your INTRO setup code</span><span class="k">${fmtSetup(b.plain[d.code]||'···············')}</span><span class="d">1. Tap your new INTRO with your own phone, or scan the QR on its back.<br>2. Choose “I own this INTRO. Set it up.”<br>3. Enter this code, then your email.<br>Keep this insert until you have activated. Never share the code.</span><span class="f"><span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span><span>${SKUS[d.sku]} · ${d.code}</span></span></div>`).join('')}</div></div>`;
 }
 
@@ -514,7 +566,7 @@ async function allocate(oid){const o=order(oid);const n=o.lines.reduce((a,l)=>a+
 function refreshOrder(oid){const o=order(oid);if(!o||!o.batch)return;const ds=S.devices.filter(d=>d.batch===o.batch);if(o.status!=='shipped'){o.status=ds.every(d=>d.state==='packed'||d.state==='released')?'ready':'in production'}}
 
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-si],[data-role],[data-signout],[data-go],[data-neworder],[data-qsoc],[data-qsocrm],[data-qtheme],[data-qsave],[data-qdemo],[data-qnew],[data-qphotorm],[data-prep],[data-prepsave],[data-allocate],[data-ship],[data-seal],[data-bulk],[data-dev],[data-print],[data-nfc],[data-nfcwrite],[data-copyurl],[data-verify],[data-cust],[data-repl],[data-rep],[data-addstaff],[data-close],[data-closebtn],[data-create]');
+  const t=e.target.closest('[data-si],[data-role],[data-signout],[data-go],[data-neworder],[data-qsoc],[data-qsocrm],[data-stockmake],[data-stockwrite],[data-stockdone],[data-stocksold],[data-stocksoldsave],[data-qtheme],[data-qsave],[data-qdemo],[data-qnew],[data-qphotorm],[data-prep],[data-prepsave],[data-allocate],[data-ship],[data-seal],[data-bulk],[data-dev],[data-print],[data-nfc],[data-nfcwrite],[data-copyurl],[data-verify],[data-cust],[data-repl],[data-rep],[data-addstaff],[data-close],[data-closebtn],[data-create]');
   if(!t)return;const ds=t.dataset;
   if(ds.role){A.role=ds.role;route();return}
   if(ds.si){if(ds.si==='code'){const em=$('#se').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Enter a valid work email');return}A.email=em;A.sent=String(Math.floor(1e7+Math.random()*9e7));A.step='code'}
@@ -534,6 +586,13 @@ document.addEventListener('click',async e=>{
   if(ds.qphotorm!==undefined){PQ().photo='';rerenderPrep();return}
   if(ds.qdemo!==undefined){Object.assign(Q,{name:'Marco Dela Cruz',role:'Realtor · Northpoint Realty',mobile:'+63 917 555 0199',email:'marco.dc@example.ph',channel:'Messenger',ref:'FB: Marco Dela Cruz',socials:{instagram:'marco.sells.dipolog',facebook:'marcodelacruzrealty',tiktok:'marco.sells'},theme:'electric'});route();return}
   if(ds.qsave!==undefined){quickSave();return}
+  if(ds.stockmake!==undefined){await stockMake();return}
+  if(ds.stockdone){stockMark(ds.stockdone,'released','written (marked by staff)');save();route();toast('Ready to sell');return}
+  if(ds.stockwrite){const d=dev(ds.stockwrite);const res=$('#stock-res-'+d.batch);const url=stockAddr(d.code);
+    if(!('NDEFReader' in window)){if(res)res.textContent='This browser can’t write cards. On iPhone: Copy, open NFC Tools, Write → URL, paste, then press Written ✓. On Android, open the Console in Chrome.';return}
+    try{if(res)res.textContent='Hold card '+d.code+' to the back of the phone…';const w=new NDEFReader();await w.write({records:[{recordType:'url',data:url}]});stockMark(d.code,'released','written with Web NFC: '+url);save();route();toast('Card '+d.code+' written. Ready to sell.')}catch(err){if(res)res.textContent='Write failed: '+(err&&err.message||err)}return}
+  if(ds.stocksold){const d=dev(ds.stocksold);modal(`<h2>Mark ${d.code} sold</h2><p class="small muted" style="margin:6px 0 12px">Optional, for your records. The buyer still sets it up themselves.</p><div class="grid2"><div class="field"><label for="ss-ch">Where</label><select id="ss-ch">${CHANNELS.map(c=>`<option ${c==='Shopee'?'selected':''}>${c}</option>`).join('')}</select></div><div class="field"><label for="ss-ref">Order number</label><input id="ss-ref" placeholder="e.g. 2410190ABCDE" data-focus></div></div><div class="row" style="margin-top:14px"><button class="btn" data-stocksoldsave="${d.code}">Save</button><button class="btn quiet" data-closebtn>Cancel</button></div>`);return}
+  if(ds.stocksoldsave){const d=dev(ds.stocksoldsave);d.sold={channel:$('#ss-ch').value,ref:$('#ss-ref').value.trim(),at:now()};log('stock.sold',d.code,`${d.sold.channel} ${d.sold.ref}`);save();closeModal();route();toast('Marked sold');return}
   if(ds.qnew!==undefined){QDONE=null;Q=blankPrep();route();return}
   if(ds.prep){const o=order(ds.prep);PREP=Object.assign(blankPrep(),o.prepared||{},{liveNow:o.prepared?!!o.prepared.liveNow:false});if(!o.prepared){PREP.name=o.customer;PREP.email=o.email;PREP.channel=o.channel}modal(prepModal(o));return}
   if(ds.prepsave){const o=order(ds.prepsave);const d=S.devices.find(x=>x.orderId===o.id);o.prepared=savePrep(PREP,{orderId:o.id,code:d?d.code:''});log('order.prepare',o.id,`page prepared · ${PREP.liveNow?'live before shipping':'live on claim'}`);save();closeModal();route();toast('Saved. The card will arrive with this page ready.');return}
