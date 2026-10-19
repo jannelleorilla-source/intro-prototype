@@ -339,6 +339,7 @@ body.is-activate .proto .tapcon{color:#121212;opacity:.6}
 @media (max-width:540px){.infocard i{padding:20px 14px} .infocard i span{width:68px;height:68px} .infocard div{padding:18px 16px 18px 14px}}
 .flow{--ground:#F4EFE8;--surface:#FAF7F2;--fg:#121212;--fg-2:#625B53;--fg-3:#766E65;--rule:#DDD5CA;--chip:#EBE4DA;--chip-2:#DDD5CA;color:var(--fg)}
 .socpick{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.startsteps{margin:4px 0 0;padding-left:22px;display:grid;gap:12px;font-size:16px;line-height:1.5;color:var(--fg-2)} .startsteps b{color:var(--fg)}
 .socchip{display:inline-flex;align-items:center;gap:8px;padding:5px 13px 5px 5px;border-radius:999px;border:1.5px solid rgba(18,18,18,.16);background:rgba(255,255,255,.55);color:var(--fg);font:600 14px/1 var(--sans);cursor:pointer;transition:border-color .15s,background .15s}
 .socchip .lk-ic{width:28px;height:28px;border-radius:9px;font-size:11px}.socchip .lk-ic svg{width:15px;height:15px}
 .socchip:hover{border-color:rgba(18,18,18,.4)}.socchip.on{border-color:var(--fg);background:#fff;box-shadow:0 0 0 1px var(--fg) inset}
@@ -559,7 +560,8 @@ const RESOLVER='intro.ph'; // the printed tap address host (see decisions-and-fa
 // The website (main domain). Switches to https://intro.ph automatically once Studio runs on studio.intro.ph.
 const SITE_URL=/(^|\.)intro\.ph$/.test(location.hostname)?'https://intro.ph':'https://site--intro-website-test.netlify.app';
 // A tap address opened on this host (/t/<code> or /p/<pcode>, forwarded by 404.html as ?t= / ?p=)
-const TAP=(()=>{try{const q=new URLSearchParams(location.search);const t=(q.get('t')||'').toUpperCase(),p=(q.get('p')||'').toUpperCase();if(!t&&!p)return null;history.replaceState(null,'',location.pathname+location.hash);return {t:/^[0-9A-HJKMNP-TV-Z]{8}$/.test(t)?t:'',p:/^[0-9A-HJKMNP-TV-Z]{8}$/.test(p)?p:''}}catch{return null}})();
+const TAP=(()=>{try{const q=new URLSearchParams(location.search);const t=(q.get('t')||'').toUpperCase(),p=(q.get('p')||'').toUpperCase();if(!q.has('t')&&!q.has('p'))return null;history.replaceState(null,'',location.pathname+location.hash);const ok=c=>/^[0-9A-HJKMNP-TV-Z]{8}$/.test(c);return {t:ok(t)?t:'',p:ok(p)?p:'',bad:(q.has('t')&&!ok(t))||(q.has('p')&&!ok(p))}}catch{return null}})();
+let TAPMISS=false; // a tap address that matches no INTRO
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2200)}
 function get(o,p){return p.split('.').reduce((a,k)=>a==null?a:a[k],o)}
 function set(o,p,v){const ks=p.split('.');let a=o;for(const k of ks.slice(0,-1)){if(a[k]==null)a[k]={};a=a[k]}a[ks.at(-1)]=v}
@@ -826,14 +828,14 @@ function vcard(c,o={}){
 function vcfName(c){return ((c.name||'contact').replace(/[^\w\- ]+/g,'').trim()||'contact')+'.vcf'}
 
 /* ---------- router ---------- */
-const ROUTES={signin:()=>viewSignin(),tap:viewTap,activate:viewActivate,studio:viewStudio,view:viewFull};
+const ROUTES={start:()=>viewStart(),signin:()=>viewSignin(),tap:viewTap,activate:viewActivate,studio:viewStudio,view:viewFull};
 let A=null; // activation flow state (in memory only)
 function route(){
   syncPrep();
   const h=(location.hash||'#studio').slice(1);const base=h.split('-')[0];
   const fn=ROUTES[base]||viewStudio;
   $$('#protonav a').forEach(a=>a.classList.toggle('on',a.dataset.r===base));
-  document.body.classList.toggle('is-view',base==='view');document.body.classList.toggle('is-activate',base==='activate'||base==='signin');
+  document.body.classList.toggle('is-view',base==='view');document.body.classList.toggle('is-activate',base==='activate'||base==='signin'||base==='start');
 
   $('#app').innerHTML=fn(h);setHdr();
   window.scrollTo(0,0);
@@ -944,6 +946,18 @@ function viewActivate(h){
 function setupToContent(s){const c=clone(DEMO_CONTENT);const [role,org]=(s.role||'').split(/\s*[·|,]\s*/);Object.assign(c,{name:s.name,headword:'',say:'',goesBy:'',role:role||'',org:org||'',location:'',bio:'',photo:s.photo||'',logo:'',cover:'covers/art/aurora-violet.svg',links:Object.entries(s.socials||{}).filter(([k,v])=>SOCIALS[k]&&(v||'').trim()).map(([k,v])=>({id:'s-'+k,kind:k,value:v.trim().replace(/^@/,''),on:true}))});c.appearance=Object.assign({},c.appearance,{layout:'cover',theme:PALETTES[s.theme]?s.theme:'ivory',accent:(PALETTES[s.theme]||PALETTES.ivory).acc});c.contact={mobile:s.mobile,email:'',messenger:'',viber:'',whatsapp:'',telegram:''};c.actionOrder=['call','sms'];return c}
 
 /* ====================== CUSTOMER SIGN-IN ====================== */
+function viewStart(){const miss=TAPMISS;return `<div class="flow" style="max-width:560px"><div class="card">
+  <p class="lbl">${miss?'Tap address':'INTRO Studio'}</p>
+  <h1 style="margin-top:8px">${miss?'We couldn’t find this INTRO.':'Set up your INTRO.'}</h1>
+  <p class="lede">${miss?'The address may be mistyped, or the card was replaced. Tap the card again, or scan the QR on its back.':'Setup always starts from the card itself, so nobody can claim an INTRO that isn’t in their hands. It takes about two minutes.'}</p>
+  <ol class="startsteps">
+    <li><b>Tap your INTRO</b> on the top of an iPhone or the back of an Android, or scan the QR on the back with the camera.</li>
+    <li><b>Have your setup code ready.</b> It is printed under the seal of the insert in your box.</li>
+    <li><b>Sign in with your email.</b> We send an 8-digit code. No password.</li>
+  </ol>
+  <div class="stack" style="margin-top:22px"><a class="btn wide" href="#signin">Already set up? Sign in →</a><a class="btn ghost wide" href="${SITE_URL}/how-it-works#studio">How it works</a></div>
+  <div class="sect small muted"><b>Did INTRO set it up for you?</b> There is no setup code. Tap the card, or sign in with the email you gave us.<br><br>Prototype: <a href="#activate" style="color:inherit;font-weight:700">try it with the demo card →</a></div>
+</div></div>`}
 function viewSignin(){return `<div class="flow" style="max-width:460px"><div class="card" style="padding:28px">
   <div class="row" style="gap:10px;margin-bottom:18px"><span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span><span class="lbl" style="font-size:10px">Studio</span></div>
   ${L.step==='email'?`<h1>Sign in</h1><p class="lede" style="margin-top:8px">Enter the email you used when you activated your INTRO. We’ll send a one-time code. No password.</p>
@@ -1213,7 +1227,8 @@ if(!location.hash)location.hash='#activate';else if(location.hash==='#studio-hom
 if(location.hash.startsWith('#view'))document.body.classList.add('is-view');
 (function routeTap(){if(!TAP)return;const prep=readPrep();const live=c=>c&&((S.profile.pcode===c&&S.profile.status==='published')||(S.devices||[]).some(d=>d.code===c&&d.state==='active'&&S.profile.status==='published'));
   let want='#activate';
-  if(TAP.p)want=(TAP.p===S.profile.pcode&&S.profile.status!=='hidden')?'#view':'#activate';
+  if(TAP.bad){TAPMISS=true;want='#start'}
+  else if(TAP.p){if(TAP.p===S.profile.pcode&&S.profile.status!=='hidden')want='#view';else{TAPMISS=true;want='#start'}}
   else if(prep&&prep.code===TAP.t)want=prep.liveNow?'#view':'#activate';
   else if(live(TAP.t))want='#view';
   if(location.hash!==want)history.replaceState(null,'',location.pathname+want)})();
