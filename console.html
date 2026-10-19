@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#121212">
+<meta name="robots" content="noindex">
+<link rel="icon" href="brand/favicon.svg" type="image/svg+xml">
+<style>html{color-scheme:light dark}body{margin:0}</style>
+<title>INTRO Console</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+/* Layout: the internal Console. Dense, operational, same brand tokens as Studio but with tables, state chips and a left rail. Print sheets are separate views with their own @media print rules. */
+:root{
+  --ground:#F4EFE8; --surface:#FAF7F2; --fg:#121212; --fg-2:#625B53; --fg-3:#766E65; --rule:#DDD5CA; --chip:#EBE4DA; --chip-2:#DDD5CA;
+  --bronze:#B48A5A; --bad:#A3423A; --good:#3B6B45; --warn:#8A6A2E; --info:#355A8C;
+  --serif:"Montserrat","Helvetica Neue",Arial,sans-serif; --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --shadow:0 1px 2px rgba(0,0,0,.06),0 12px 32px rgba(40,30,15,.10);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ground:#121212;--surface:#1A1917;--fg:#F4EFE8;--fg-2:#C9C1B7;--fg-3:#8C847B;--rule:#2A2826;--chip:#1C1B1A;--chip-2:#2A2826;--bronze:#C9A070;--bad:#E07A70;--good:#8CC494;--warn:#D9B36A;--info:#8FB3E0;color-scheme:dark}}
+:root[data-theme="dark"]{--ground:#121212;--surface:#1A1917;--fg:#F4EFE8;--fg-2:#C9C1B7;--fg-3:#8C847B;--rule:#2A2826;--chip:#1C1B1A;--chip-2:#2A2826;--bronze:#C9A070;--bad:#E07A70;--good:#8CC494;--warn:#D9B36A;--info:#8FB3E0;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration-thickness:1px;text-underline-offset:3px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+h1,h2,h3{font-family:var(--serif);font-weight:400;line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(28px,4vw,38px)} h2{font-size:24px} h3{font-size:19px;font-weight:500}
+p{margin:0}
+.wmk{display:inline-flex;align-items:center;line-height:0}
+.wmimg{height:13px;width:auto;display:none} .wmimg.l{display:inline}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .wmimg.l{display:none} :root:not([data-theme="light"]) .wmimg.d{display:inline}}
+:root[data-theme="dark"] .wmimg.l{display:none} :root[data-theme="dark"] .wmimg.d{display:inline}
+.proto .wmimg.l{display:none!important} .proto .wmimg.d{display:inline!important}
+.rail .who .wmimg{height:15px}
+.sheet .wmimg.l,.ins .wmimg.l{display:inline!important} .sheet .wmimg.d,.ins .wmimg.d{display:none!important} .ins .wmimg{height:9px}
+.wm{font-family:var(--serif);font-weight:300;letter-spacing:.34em;line-height:1;text-transform:uppercase;display:inline-flex;align-items:center;white-space:nowrap}
+.wm .o{width:.78em;height:.78em;flex:none}
+.wm .o circle{fill:none;stroke:currentColor;stroke-width:1.9;stroke-dasharray:50 6.5;stroke-dashoffset:-4}
+.lbl{font-family:var(--serif);font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--fg-2);font-weight:500}
+.muted{color:var(--fg-2)} .small{font-size:13.5px;line-height:1.5} .mono{font-family:var(--mono);font-size:.93em}
+.code{font-family:var(--mono);font-size:.92em;background:var(--chip);padding:1px 6px;border-radius:5px;white-space:nowrap}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap} .row.between{justify-content:space-between} .grow{flex:1 1 auto;min-width:0}
+.stack{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)} .hide{display:none!important} .tnum{font-variant-numeric:tabular-nums}
+.proto{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:#121212;color:#F6F1E8;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.proto .in{max-width:1500px;margin:0 auto;display:flex;align-items:center;gap:16px;min-height:44px;flex-wrap:wrap;padding-block:6px}
+.proto .wm{font-size:16px}
+.proto .tag{font-size:11px;letter-spacing:.2em;text-transform:uppercase;border:1px solid rgba(246,241,232,.35);border-radius:999px;padding:3px 10px}
+.proto .note{margin-left:auto;font-size:12px;opacity:.7}
+.proto .reset{background:transparent;border:1px solid rgba(246,241,232,.35);color:inherit;border-radius:999px;padding:4px 10px;font-size:12px}
+.proto a.lnk{font-size:12.5px;opacity:.8}
+.page{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1500px;margin:0 auto}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--fg);background:var(--fg);color:var(--ground);font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap}
+.btn:hover{filter:brightness(1.15)} .btn.ghost{background:transparent;color:var(--fg);border-color:var(--rule)} .btn.ghost:hover{filter:none;border-color:var(--fg)}
+.btn.quiet{background:transparent;color:var(--fg-2);border-color:transparent;padding:0 8px} .btn.danger{background:transparent;color:var(--bad);border-color:var(--rule)}
+.btn.sm{min-height:30px;padding:0 11px;font-size:12px} .btn[disabled]{opacity:.4;cursor:not-allowed;filter:none}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0} .field>label{font-size:14px;font-weight:600} .field .hint{font-size:12px;color:var(--fg-2)} .field .err{font-size:12px;color:var(--bad)}
+input:not([type]),input[type=text],input[type=email],input[type=tel],input[type=search],input[type=number],select,textarea{font:inherit;width:100%;min-height:38px;padding:7px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);color:var(--fg)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--fg);outline-offset:-1px;border-color:var(--fg)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px 14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:16px;padding:18px 20px}
+.card h3{margin-bottom:4px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid var(--rule);background:var(--surface);white-space:nowrap}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--fg-3);display:inline-block}
+.pill.allocated i{background:var(--fg-3)} .pill.encoded i{background:var(--info)} .pill.verified i{background:var(--info)} .pill.locked i{background:var(--warn)} .pill.packed i{background:var(--warn)}
+.pill.released i{background:var(--bronze)} .pill.active i{background:var(--good)} .pill.paused i{background:var(--warn)} .pill.lost i{background:var(--bad)} .pill.blocked i{background:var(--bad)} .pill.retired i{background:var(--fg-3)}
+.pill.new i{background:var(--info)} .pill.production i{background:var(--warn)} .pill.ready i{background:var(--bronze)} .pill.shipped i{background:var(--good)}
+.pill.open i{background:var(--bad)} .pill.closed i{background:var(--fg-3)}
+.tbl{overflow-x:auto;border:1px solid var(--rule);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{text-align:left;vertical-align:middle;padding:10px 12px;border-bottom:1px solid var(--rule)}
+th{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-2);font-weight:600;background:var(--chip);position:sticky;top:0}
+tr:last-child td{border-bottom:0} td.num,th.num{text-align:right;font-variant-numeric:tabular-nums} tr.clk{cursor:pointer} tr.clk:hover td{background:var(--chip)}
+.console{display:grid;grid-template-columns:210px minmax(0,1fr);min-height:calc(100vh - 44px)}
+.rail{border-right:1px solid var(--rule);padding:22px 0;position:sticky;top:44px;height:calc(100vh - 44px);overflow:auto}
+.rail .who{padding:0 18px 16px;border-bottom:1px solid var(--rule);margin-bottom:10px}
+.rail .who .nm{font-weight:700;font-size:13.5px;margin-top:10px} .rail .who .rl{font-size:12px;color:var(--fg-2)}
+.rail a{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 18px;text-decoration:none;font-size:15px;color:var(--fg-2);border-left:2px solid transparent}
+.rail a:hover{color:var(--fg)} .rail a.on{color:var(--fg);font-weight:700;border-left-color:var(--fg);background:var(--surface)}
+.rail .cnt{font-size:11px;background:var(--chip-2);border-radius:999px;padding:1px 7px;font-weight:600;color:var(--fg-2)} .rail .cnt.hot{background:var(--bad);color:#fff}
+.rail .foot{padding:16px 18px;font-size:11.5px;color:var(--fg-3)}
+.main{padding:24px clamp(16px,2.5vw,36px) 90px;min-width:0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px} .head p{color:var(--fg-2);margin-top:4px}
+.stat{display:grid;gap:2px} .stat b{font-family:var(--serif);font-size:30px;font-weight:300;line-height:1.1} .stat span{font-size:12px;color:var(--fg-2)}
+.steps{display:flex;gap:4px;flex-wrap:wrap} .steps span{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--rule);color:var(--fg-3)} .steps span.done{background:var(--fg);color:var(--ground);border-color:var(--fg)} .steps span.cur{border-color:var(--fg);color:var(--fg);font-weight:700}
+.timeline{display:grid;gap:0} .timeline div{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12.5px} .timeline div:last-child{border-bottom:0} .timeline .t{color:var(--fg-2);font-variant-numeric:tabular-nums}
+
+/* quick setup */
+.inbox{background:var(--chip);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5;overflow-wrap:anywhere} .inbox .code{white-space:normal;overflow-wrap:anywhere} .inbox b{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);margin-bottom:4px}
+.quickcta{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:16px;background:var(--chip)}
+.qchips{display:flex;flex-wrap:wrap;gap:8px}
+.qchip{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 14px 0 8px;border-radius:999px;border:1.5px solid var(--rule);background:var(--surface);color:var(--fg);font:600 14px/1 var(--sans);cursor:pointer}
+.qchip i{width:22px;height:22px;border-radius:7px;background:var(--b)} .qchip:hover{border-color:var(--fg)} .qchip.on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.qrows{display:grid;gap:8px;margin-top:12px} .qrow{display:grid;grid-template-columns:30px minmax(0,1fr) 32px;gap:10px;align-items:center} .qrow i{width:30px;height:30px;border-radius:9px;display:block}
+.qrow .x{width:32px;height:32px;border-radius:999px;border:0;background:transparent;color:var(--fg);opacity:.55;font-size:20px;line-height:1;cursor:pointer} .qrow .x:hover{opacity:1}
+.tdots{display:flex;gap:10px;flex-wrap:wrap} .tdots button{width:36px;height:36px;border-radius:50%;border:1px solid var(--rule);padding:0;position:relative;box-shadow:0 0 0 2px var(--surface);cursor:pointer} .tdots button i{position:absolute;right:6px;bottom:6px;width:12px;height:12px;border-radius:50%} .tdots button.on{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--fg)}
+.qav{width:56px;height:56px;border-radius:50%;background:var(--chip) center/cover no-repeat;display:grid;place-items:center;font-family:var(--serif);font-size:18px;color:var(--fg-2);flex:none}
+.filebtn{position:relative;cursor:pointer}
+.switch{display:flex;gap:14px;align-items:flex-start;cursor:pointer} .switch input{position:absolute;opacity:0;width:0;height:0} .switch .track{width:44px;height:26px;border-radius:999px;background:var(--chip-2);position:relative;flex:none;transition:background .15s;margin-top:2px} .switch .track i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s} .switch input:checked+.track{background:var(--good)} .switch input:checked+.track i{left:21px} .switch input:focus-visible+.track{outline:2px solid var(--fg);outline-offset:2px}
+.card.flat{border:0;padding:0;background:transparent} .card.flat h3{font-size:15px}
+.qrbox svg{width:120px;height:120px;display:block}
+.shipsteps{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.shipsteps li{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--rule)} .shipsteps li:last-child{border-bottom:0}
+.shipsteps .n{width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);display:grid;place-items:center;font-family:var(--serif);font-size:13px;flex:none;color:var(--fg-2)} .shipsteps li.ok .n{background:var(--fg);color:var(--ground);border-color:var(--fg)}
+.shipsteps b{font-size:14.5px}
+.callout{border-left:2px solid var(--bad);padding:4px 0 4px 14px;font-size:13px} .callout.good{border-color:var(--good)} .callout.info{border-color:var(--info)} .callout.warn{border-color:var(--warn)}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--fg);color:var(--ground);padding:10px 16px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:all .2s;z-index:60;max-width:calc(100vw - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .in{background:var(--ground);border-radius:18px;padding:22px;max-width:560px;width:100%;max-height:92vh;overflow:auto;box-shadow:var(--shadow)}
+.codes{font-family:var(--mono);font-size:22px;letter-spacing:.12em}
+.secret{background:var(--chip);border:1px dashed var(--rule);border-radius:12px;padding:12px 14px}
+.signin{max-width:440px;margin:60px auto 90px}
+.signin .card{padding:28px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:9px;overflow:hidden;background:var(--surface);flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:7px 12px;font-size:12.5px;color:var(--fg-2)} .seg button.on{background:var(--fg);color:var(--ground);font-weight:700}
+.dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.bars{display:grid;gap:6px} .bars div{display:grid;grid-template-columns:90px 1fr 36px;gap:8px;align-items:center;font-size:12.5px} .bars i{display:block;height:8px;border-radius:4px;background:var(--fg)} .bars .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--fg-2)}
+.canary{display:flex;gap:6px;flex-wrap:wrap} .canary span{font-size:11px;padding:3px 8px;border-radius:6px;background:var(--chip);display:inline-flex;gap:6px;align-items:center} .canary i{width:7px;height:7px;border-radius:50%;background:var(--good);display:inline-block}
+/* print sheets */
+.sheet{background:#fff;color:#111;padding:10mm;max-width:210mm;margin:16px auto;box-shadow:var(--shadow);font-family:var(--sans)}
+.sheet h2{font-family:var(--serif);font-size:16px;margin-bottom:6px;color:#111}
+.qrgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6mm}
+.qrcell{border:.3mm dashed #bbb;padding:4mm;display:flex;flex-direction:column;align-items:center;gap:2mm;break-inside:avoid}
+.qrcell svg{width:18mm;height:18mm;display:block} .qrcell .c{font-family:var(--mono);font-size:9pt;letter-spacing:.08em;color:#111} .qrcell .s{font-size:7pt;color:#666}
+.insgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6mm}
+.ins{border:.3mm solid #ccc;padding:6mm;break-inside:avoid;display:grid;gap:3mm;color:#111}
+.ins .t{font-family:var(--serif);font-size:13pt} .ins .k{font-family:var(--mono);font-size:16pt;letter-spacing:.16em} .ins .d{font-size:8pt;color:#444;line-height:1.45} .ins .f{display:flex;justify-content:space-between;font-size:7.5pt;color:#666;border-top:.3mm solid #ddd;padding-top:2mm}
+.ins .f .wm{font-size:9pt;color:#111}
+.printbar{display:flex;gap:10px;align-items:center;max-width:210mm;margin:16px auto 0;flex-wrap:wrap}
+@media print{.proto,.printbar,.rail,.toast{display:none!important}.sheet{box-shadow:none;margin:0;max-width:none;padding:0}.qrgrid{grid-template-columns:repeat(5,1fr)}body{background:#fff}.console{display:block}.main{padding:0}}
+@media (max-width:820px){.console{grid-template-columns:1fr}.rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--rule);padding:8px 0;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}.rail .who,.rail .foot{display:none}.rail a{border-left:0;border-bottom:2px solid transparent;padding:8px 12px;white-space:nowrap}.rail a.on{border-bottom-color:var(--fg);background:transparent}.qrgrid{grid-template-columns:repeat(2,1fr)}.insgrid{grid-template-columns:1fr}.timeline div{grid-template-columns:1fr}}
+@media (max-width:760px){.proto .note{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="proto"><div class="in">
+  <span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span>
+  <span class="tag">Console · internal</span>
+  <a class="lnk" href="./#activate">Customer side ↗</a>
+  <span class="note">Interface prototype · 19 Oct 2026 · mock data, nothing leaves this page</span>
+  <button class="reset" id="themeBtn" type="button" title="Day, night or follow the device">◐ Auto</button>
+    <button class="reset" id="resetBtn" type="button">Reset demo</button>
+</div></header>
+<main id="app" class="page"></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="layer"></div>
+
+<script>
+/* day / night / auto switch for the Studio and Console chrome (customer pages keep their own theme) */
+(function(){const K='intro-ui-theme';const modes=['auto','light','dark'];const label={auto:'Auto',light:'Day',dark:'Night'};
+  const hostTheme=document.documentElement.getAttribute('data-theme'); /* what the viewer/app set before we touched it */
+  function apply(m){const r=document.documentElement;if(m==='auto'){if(hostTheme)r.setAttribute('data-theme',hostTheme);else r.removeAttribute('data-theme')}else r.setAttribute('data-theme',m);const b=document.getElementById('themeBtn');if(b)b.textContent=(m==='dark'?'☾ ':m==='light'?'☀ ':'◐ ')+label[m]}
+  let m='auto';try{m=localStorage.getItem(K)||'auto'}catch{}
+  apply(m);
+  document.addEventListener('click',e=>{const b=e.target.closest('#themeBtn');if(!b)return;m=modes[(modes.indexOf(m)+1)%modes.length];try{localStorage.setItem(K,m)}catch{}apply(m)});
+  document.addEventListener('DOMContentLoaded',()=>apply(m));
+})();
+
+/* ---------- utilities ---------- */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const RESOLVER='intro.ph'; // placeholder host; /t/<code> matches the website and print templates
+const PUBLIC_BASE=()=>location.origin+location.pathname.replace(/console(\.html)?\/?$/,'');
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2400)}
+const now=()=>new Date().toISOString();
+function fmt(iso){if(!iso)return '—';const d=new Date(iso);return d.toLocaleString('en-PH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+function fmtD(iso){if(!iso)return '—';return new Date(iso).toLocaleDateString('en-PH',{day:'numeric',month:'short',year:'numeric'})}
+function ago(iso){if(!iso)return 'never';const h=(Date.now()-new Date(iso))/36e5;if(h<1)return 'just now';if(h<24)return Math.round(h)+' h ago';const d=Math.round(h/24);return d===1?'yesterday':d+' days ago'}
+function mask(e){if(!e||!e.includes('@'))return esc(e||'');const [u,d]=e.split('@');return esc((u[0]||'')+'•••@'+d)}
+const validEmail=e=>/^[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+$/.test(e||'');
+function qrSvg(text,cell){try{const q=qrcode(0,'M');q.addData(text);q.make();return q.createSvgTag({cellSize:cell||3,margin:4,scalable:true})}catch{return ''}}
+async function sha256(s){const b=new TextEncoder().encode(s);const h=await crypto.subtle.digest('SHA-256',b);return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+
+/* ---------- codes: device code (Crockford base32 + Luhn mod-32 check), setup code (14 digits + Damm check) ---------- */
+const CROCK='0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+function luhn32(s){let f=2,sum=0;for(let i=s.length-1;i>=0;i--){let a=CROCK.indexOf(s[i])*f;f=f===2?1:2;a=Math.floor(a/32)+(a%32);sum+=a}return CROCK[(32-(sum%32))%32]}
+function newDeviceCode(){const a=crypto.getRandomValues(new Uint8Array(7));let s='';for(const b of a)s+=CROCK[b%32];return s+luhn32(s)}
+function deviceCodeValid(c){c=(c||'').toUpperCase().replace(/[^0-9A-Z]/g,'').replace(/O/g,'0').replace(/[IL]/g,'1');if(c.length!==8)return false;return luhn32(c.slice(0,7))===c[7]}
+const DAMM=[[0,3,1,7,5,9,8,6,4,2],[7,0,9,2,1,5,4,8,6,3],[4,2,0,6,8,7,1,3,5,9],[1,7,5,0,9,8,3,4,2,6],[6,1,2,3,0,4,5,9,7,8],[3,6,7,4,2,0,9,5,8,1],[5,8,6,9,7,2,0,1,3,4],[8,9,4,5,3,6,2,0,1,7],[9,4,3,8,6,1,7,2,0,5],[2,5,8,1,4,3,6,7,9,0]];
+function damm(digits){let i=0;for(const d of digits)i=DAMM[i][+d];return i}
+function newSetupCode(){const a=crypto.getRandomValues(new Uint8Array(14));let s='';for(const b of a)s+=b%10;return s+damm(s)}
+const setupValid=c=>/^\d{15}$/.test(c)&&damm(c)===0;
+const fmtSetup=c=>c?c.slice(0,5)+'-'+c.slice(5,10)+'-'+c.slice(10):'';
+const setupHash=(code,dev)=>sha256('intro-setup:'+dev+':'+code); // production: bcrypt on the server, never in the browser
+
+/* ---------- catalogue ---------- */
+const SKUS={card:'INTRO Card',card_signature:'INTRO Signature',social_fb:'Facebook Social Card',social_ig:'Instagram Social Card',social_tt:'TikTok Social Card',keychain:'INTRO Keychain',photostrip:'INTRO Photostrip Keychain'};
+const DIRECT_SKUS=['social_fb','social_ig','social_tt'];
+const STATES=['allocated','encoded','verified','locked','packed','released','active','paused','lost','blocked','retired'];
+const PROD_STEPS=['allocated','encoded','verified','locked','packed','released'];
+const STATE_LABEL={allocated:'Allocated',encoded:'Encoded',verified:'Read-back OK',locked:'Locked',packed:'Pack-verified',released:'Shipped · unclaimed',active:'Active',paused:'Paused',lost:'Lost',blocked:'Blocked',retired:'Retired'};
+const ROLES={owner:{name:'Owner',can:['production','support','system']},production:{name:'Production',can:['production']},support:{name:'Support',can:['support']}};
+
+/* ---------- demo data ---------- */
+function seed(){
+  const t0='2026-10-01T09:00:00',t1='2026-10-02T10:14:00',t2='2026-10-09T15:40:00';
+  const S={
+    staff:null,
+    staffList:[{id:'s1',name:'Jannelle O.',email:'owner@example.ph',role:'owner',mfa:true},{id:'s2',name:'Production desk',email:'prod@example.ph',role:'production',mfa:true},{id:'s3',name:'Support desk',email:'support@example.ph',role:'support',mfa:false}],
+    seq:{order:1043,batch:7,report:12},
+    orders:[
+      {id:'INTRO-01041',channel:'Shopify',ref:'#1041',customer:'Ysabel Ignacio',email:'ysa.private@example.ph',lines:[{sku:'card',qty:1,pers:'Ysabel Ignacio · Architect · Ignacio Studio'},{sku:'keychain',qty:1,pers:'Ysa'}],status:'shipped',createdAt:t0,shippedAt:'2026-10-03T16:00:00',batch:'B-0006',notes:'Rush. Dipolog pickup.'},
+      {id:'INTRO-01040',channel:'Direct',ref:'FB-msg 14 Oct',customer:'Gen Spa Dipolog',email:'frontdesk@genspa.example.ph',lines:[{sku:'social_ig',qty:2,pers:'Instagram @genspadipolog; Obsidian front, ivory back'}],status:'in production',createdAt:'2026-10-14T10:00:00',batch:'B-0005',notes:'Design proof approved 16 Oct.'},
+      {id:'INTRO-01042',channel:'TikTok Shop',ref:'TT-88213',customer:'Northpoint Realty',email:'admin@northpoint.example.ph',lines:[{sku:'card',qty:5,pers:'5 agents, names on brief'}],status:'new',createdAt:'2026-10-17T11:20:00',notes:'Team order of five. Price per the current list.'}
+    ],
+    batches:[{id:'B-0005',orderId:'INTRO-01040',createdAt:'2026-10-16T14:00:00',sealed:false,printedQR:true,plain:{'RV7Q2K8M':null,'RVX3P9H4':null}},{id:'B-0006',orderId:'INTRO-01041',createdAt:t0,sealed:true,printedQR:true,printedIns:true,plain:{}}],
+    devices:[
+      {code:'7KQ4M2XD',sku:'card',state:'active',orderId:'INTRO-01041',batch:'B-0006',setupHash:'(seeded)',rotations:0,owner:'c1',mode:'profile',lastTap:'2026-10-16T09:12:00',events:[['allocated',t0],['encoded','2026-10-02T13:00:00'],['verified','2026-10-02T13:01:00'],['locked','2026-10-02T13:05:00'],['packed','2026-10-03T15:30:00'],['released','2026-10-03T16:00:00'],['active',t1]]},
+      {code:'3HN8PQ2A',sku:'keychain',state:'active',orderId:'INTRO-01041',batch:'B-0006',setupHash:'(seeded)',rotations:0,owner:'c1',mode:'direct',lastTap:'2026-10-17T18:02:00',events:[['allocated',t0],['encoded','2026-10-02T13:10:00'],['verified','2026-10-02T13:11:00'],['locked','2026-10-02T13:12:00'],['packed','2026-10-03T15:31:00'],['released','2026-10-03T16:00:00'],['active',t2]]},
+      {code:'RV7Q2K8M',sku:'social_ig',state:'verified',orderId:'INTRO-01040',batch:'B-0005',setupHash:'(pending)',rotations:0,owner:null,mode:'direct',lastTap:'',events:[['allocated','2026-10-16T14:00:00'],['encoded','2026-10-17T09:30:00'],['verified','2026-10-17T09:31:00']]},
+      {code:'RVX3P9H4',sku:'social_ig',state:'allocated',orderId:'INTRO-01040',batch:'B-0005',setupHash:'(pending)',rotations:0,owner:null,mode:'direct',lastTap:'',events:[['allocated','2026-10-16T14:00:00']]},
+      {code:'CANARY01',sku:'card',state:'released',orderId:'—',batch:'canary',setupHash:'(canary)',rotations:0,owner:null,mode:'profile',lastTap:'2026-10-19T00:05:00',events:[['released','2026-09-30T08:00:00']],canary:true}
+    ],
+    customers:[{id:'c1',loginEmail:'ysa.private@example.ph',name:'Ysabel Ignacio',pcode:'7KQ4M2XD',profileStatus:'published',since:t1,locked:false,suspended:false,deletion:null,devices:['7KQ4M2XD','3HN8PQ2A']}],
+    reports:[{id:'R-0011',at:'2026-10-18T20:12:00',target:'/p/7KQ4M2XD',reason:'Impersonation',detail:'Reporter says this is not the real architect. No evidence attached.',status:'open'}],
+    audit:[{t:t0,by:'Production desk',action:'batch.allocate',target:'B-0006',detail:'2 devices for INTRO-01041'},{t:'2026-10-02T13:05:00',by:'Production desk',action:'device.lock',target:'7KQ4M2XD',detail:'after read-back + resolve check'},{t:'2026-10-03T16:00:00',by:'Production desk',action:'order.ship',target:'INTRO-01041',detail:'LBC, Dipolog pickup'},{t:t1,by:'system',action:'device.claim',target:'7KQ4M2XD',detail:'claimed by c1 (atomic)'}],
+    canaries:{checkedAt:'2026-10-19T00:05:00',states:{live:'ok',direct:'ok',unclaimed:'ok',paused:'ok',lost:'ok',hidden:'ok',notfound:'ok'},backup:'2026-10-19T02:00:00'}
+  };
+  return S;
+}
+const LS='intro-console-proto-v1';
+let S;try{S=JSON.parse(localStorage.getItem(LS))||seed()}catch{S=seed()}
+if(!S.devices||!S.orders)S=seed();
+const save=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch{}};
+async function ensureHashes(){let changed=false;for(const b of S.batches){if(b.sealed)continue;for(const code of Object.keys(b.plain)){if(!b.plain[code]){b.plain[code]=newSetupCode();changed=true}const d=dev(code);if(d&&d.setupHash==='(pending)'){d.setupHash=await setupHash(b.plain[code],code);changed=true}}}if(changed)save()}
+function log(action,target,detail){S.audit.unshift({t:now(),by:S.staff?S.staff.name:'system',action,target,detail});if(S.audit.length>500)S.audit.length=500}
+const can=area=>!!S.staff&&ROLES[S.staff.role].can.includes(area);
+const dev=code=>S.devices.find(d=>d.code===code);
+const order=id=>S.orders.find(o=>o.id===id);
+const batch=id=>S.batches.find(b=>b.id===id);
+const cust=id=>S.customers.find(c=>c.id===id);
+function setState(d,state,detail){d.state=state;d.events.push([state,now()]);log('device.'+state,d.code,detail||'')}
+
+/* ---------- router ---------- */
+let A={step:'email',email:'',role:'owner'};
+function route(){
+  const h=(location.hash||'#dash').slice(1);
+  if(!S.staff&&h!=='signin'){location.hash='#signin';return}
+  const [page,...rest]=h.split('-');const arg=rest.join('-');
+  const V={signin:vSignin,quick:vQuick,dash:vDash,orders:vOrders,order:vOrder,production:vProduction,batch:vBatch,print:vPrint,devices:vDevices,device:vDevice,customers:vCustomers,customer:vCustomer,reports:vReports,system:vSystem,codes:vCodes};
+  const fn=V[page]||vDash;
+  $('#app').innerHTML=page==='signin'?fn():shell(page,fn(arg));
+  window.scrollTo(0,0);
+  $$('[data-focus]').forEach(e=>e.focus());
+}
+window.addEventListener('hashchange',route);
+let PREP=null;
+function prepModal(o){return `<div data-prep="1"><h2>Set up ${esc(o.customer)}’s page</h2><p class="small muted" style="margin:4px 0 14px">Paste what they sent you in chat. They can change all of it later in INTRO Studio.</p><div class="stack">${prepFields(PREP,false).replace(/class="card"/g,'class="card flat"')}
+  <div class="grid2"><div class="field"><label for="p-name">Name on the page</label><input id="p-name" data-q="name" value="${esc(PREP.name)}"></div><div class="field"><label for="p-role">What they do</label><input id="p-role" data-q="role" value="${esc(PREP.role)}"></div><div class="field"><label for="p-mob">Mobile</label><input id="p-mob" data-q="mobile" value="${esc(PREP.mobile)}"></div><div class="field"><label for="p-em">Their sign-in email</label><input id="p-em" data-q="email" value="${esc(PREP.email)}"></div></div>
+  <label class="switch"><input type="checkbox" data-qlive ${PREP.liveNow?'checked':''}><span class="track"><i></i></span><span><b>Live before shipping</b><br><span class="small muted">Off: the page goes live when they claim the card (default for shipped orders).</span></span></label></div>
+  <div class="row" style="margin-top:16px"><button class="btn" data-prepsave="${o.id}">Save</button><button class="btn quiet" data-closebtn>Cancel</button></div></div>`}
+function rerenderPrep(focusSel){const m=$('#layer .in');if(m&&m.dataset&&$('[data-prep="1"]',m)){const o=order($('[data-prepsave]',m).dataset.prepsave);m.innerHTML=prepModal(o)}else{const main=$('.main');if(main&&location.hash.startsWith('#quick')){const y=window.scrollY;main.innerHTML=vQuick();window.scrollTo(0,y)}else route()}if(focusSel){const el=$(focusSel);if(el)el.focus({preventScroll:true})}}
+document.addEventListener('input',e=>{const el=e.target;if(!(el instanceof HTMLElement))return;const q=($('#layer .in')&&$('[data-prep="1"]',$('#layer .in'))&&PREP)?PREP:Q;if(el.dataset.q!==undefined){q[el.dataset.q]=el.value}else if(el.dataset.qv!==undefined){q.socials[el.dataset.qv]=el.value}});
+document.addEventListener('change',e=>{const el=e.target;if(!(el instanceof HTMLElement))return;const q=($('#layer .in')&&$('[data-prep="1"]',$('#layer .in'))&&PREP)?PREP:Q;
+  if(el.dataset.qlive!==undefined){q.liveNow=el.checked;return}
+  if(el.id==='q-photo'&&el.files&&el.files[0]){const f=el.files[0];const img=new Image();const u=URL.createObjectURL(f);img.onload=()=>{const c=document.createElement('canvas');const m=Math.min(img.width,img.height);c.width=c.height=512;const x=c.getContext('2d');x.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,512,512);q.photo=c.toDataURL('image/jpeg',.82);URL.revokeObjectURL(u);rerenderPrep()};img.src=u}});
+$('#resetBtn').addEventListener('click',()=>{S=seed();save();A={step:'email',email:'',role:'owner'};location.hash='#signin';route();toast('Demo data reset')});
+
+function shell(page,body){
+  const openReports=S.reports.filter(r=>r.status==='open').length;
+  const inProd=S.devices.filter(d=>PROD_STEPS.includes(d.state)&&d.state!=='released').length;
+  const nav=[['quick','⚡ Quick setup'],['dash','Dashboard'],['orders','Orders',S.orders.filter(o=>o.status==='new').length],['production','Production',inProd],['devices','Devices'],['customers','Customers'],['reports','Reports',openReports,'hot'],['codes','Codes & QR'],['system','System']];
+  const pg=page==='order'?'orders':page==='batch'||page==='print'?'production':page==='device'?'devices':page==='customer'?'customers':page;
+  return `<div class="wrap console"><aside class="rail"><div class="who"><span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span> <span class="lbl" style="font-size:9.5px;margin-left:6px">Console</span><div class="nm">${esc(S.staff.name)}</div><div class="rl">${ROLES[S.staff.role].name} · MFA ${S.staff.mfa?'on':'off'}</div></div>
+    ${nav.map(([k,l,c,hot])=>`<a href="#${k}" class="${pg===k?'on':''}">${l}${c?`<span class="cnt ${hot?'hot':''}">${c}</span>`:''}</a>`).join('')}
+    <div class="foot">Every action here is written to the audit log.<br><a href="#signin" data-signout>Sign out</a></div></aside><section class="main">${body}</section></div>`;
+}
+
+/* ---------- sign-in ---------- */
+function vSignin(){
+  const step=A.step;
+  return `<div class="signin"><div class="card">
+    <span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span> <span class="lbl" style="font-size:9.5px;margin-left:6px">Console</span>
+    <h1 style="margin:18px 0 6px">Staff sign-in</h1>
+    ${step==='email'?`<p class="muted" style="margin-bottom:18px">Staff accounts only. Customers never sign in here.</p><div class="field"><label for="se">Work email</label><input id="se" type="email" value="${esc(A.email)}" placeholder="you@example.ph" data-focus></div>
+      <div class="field" style="margin-top:12px"><label>Demo role</label><div class="seg">${Object.entries(ROLES).map(([k,r])=>`<button type="button" data-role="${k}" class="${A.role===k?'on':''}">${r.name}</button>`).join('')}</div><p class="hint">In the real Console the role comes from the staff record, not a picker.</p></div>
+      <div class="row" style="margin-top:18px"><button class="btn" data-si="code">Send sign-in code</button></div>`:''}
+    ${step==='code'?`<p class="muted" style="margin-bottom:18px">8-digit code sent to <b>${esc(A.email)}</b>. Prototype shows it here: <span class="code">${A.sent}</span></p><div class="field"><label for="sc">Sign-in code</label><input id="sc" inputmode="numeric" maxlength="8" data-focus></div><div class="row" style="margin-top:18px"><button class="btn" data-si="mfa">Continue</button><button class="btn quiet" data-si="back">Back</button></div>`:''}
+    ${step==='mfa'?`<p class="muted" style="margin-bottom:18px">Second factor. Enter the 6-digit code from your authenticator app. Prototype accepts <span class="code">000000</span>.</p><div class="field"><label for="sm">Authenticator code</label><input id="sm" inputmode="numeric" maxlength="6" data-focus></div><div class="row" style="margin-top:18px"><button class="btn" data-si="done">Sign in</button></div><p class="small muted" style="margin-top:14px">MFA is required for Owner and Production roles. Support without MFA gets read-only access.</p>`:''}
+  </div><p class="small muted" style="margin-top:14px;text-align:center">Sessions expire after 12 hours. Sign-in from a new device emails every owner.</p></div>`;
+}
+
+/* ---------- dashboard ---------- */
+function vDash(){
+  const counts={};for(const s of STATES)counts[s]=S.devices.filter(d=>d.state===s&&!d.canary).length;
+  const max=Math.max(1,...Object.values(counts));
+  const open=S.reports.filter(r=>r.status==='open');
+  return `<div class="head"><div><p class="lbl">Dashboard</p><h1>Good ${new Date().getHours()<12?'morning':'day'}, ${esc(S.staff.name.split(' ')[0])}.</h1><p>${S.orders.filter(o=>o.status==='new').length} new order${S.orders.filter(o=>o.status==='new').length===1?'':'s'} · ${S.devices.filter(d=>PROD_STEPS.includes(d.state)&&d.state!=='released').length} devices in production · ${open.length} open report${open.length===1?'':'s'}</p></div></div>
+  <div class="card quickcta"><div><h3>Quick setup · 2 to 5 minutes</h3><p class="small muted" style="margin-top:4px">Customer in front of you or in Messenger? Type their details, pick a look, write the card, done. No printing, no sealing.</p></div><a class="btn" href="#quick">Start a quick setup →</a></div>
+  <div class="dash">
+    <div class="card"><h3>Devices by state</h3><p class="small muted" style="margin-bottom:12px">Every INTRO ever produced, excluding canaries.</p><div class="bars">${STATES.filter(s=>counts[s]).map(s=>`<div><span>${STATE_LABEL[s]}</span><i style="width:${Math.round(counts[s]/max*100)}%"></i><span class="num">${counts[s]}</span></div>`).join('')}</div></div>
+    <div class="card"><h3>Public path health</h3><p class="small muted" style="margin-bottom:12px">Canary devices, one per resolver outcome, tapped by a monitor every 5 minutes. Last check ${ago(S.canaries.checkedAt)}.</p><div class="canary">${Object.entries(S.canaries.states).map(([k,v])=>`<span><i style="background:${v==='ok'?'var(--good)':'var(--bad)'}"></i>${k}</span>`).join('')}</div><p class="small muted" style="margin-top:12px">Nightly encrypted backup: ${fmt(S.canaries.backup)}. Restore drill: due monthly.</p></div>
+    <div class="card"><h3>Needs attention</h3><div class="stack" style="margin-top:8px">${open.map(r=>`<a class="small" href="#reports">Report ${r.id}: ${esc(r.reason)} on ${esc(r.target)}</a>`).join('')}${S.orders.filter(o=>o.status==='new').map(o=>`<a class="small" href="#order-${o.id}">Order ${o.id} from ${esc(o.customer)} waiting for allocation</a>`).join('')}${S.staffList.filter(x=>!x.mfa).map(x=>`<span class="small">${esc(x.name)} has no MFA (read-only until enrolled)</span>`).join('')}</div></div>
+    <div class="card"><h3>Recent activity</h3><div class="timeline" style="margin-top:8px">${S.audit.slice(0,6).map(a=>`<div><span class="t">${fmt(a.t)}</span><span><b>${esc(a.action)}</b> ${esc(a.target)} <span class="muted">· ${esc(a.by)}</span></span></div>`).join('')}</div><a class="small" href="#system" style="display:inline-block;margin-top:10px">Full audit log</a></div>
+  </div>`;
+}
+
+
+/* ---------- quick setup (walk-in / Messenger / TikTok customers) ---------- */
+const CHANNELS=['Walk-in','Messenger','Facebook','Instagram','TikTok','TikTok Shop','Shopee','Shopify','Website','Other'];
+const QSOC={instagram:['Instagram','#E1306C'],facebook:['Facebook','#1877F2'],tiktok:['TikTok','#111111'],linkedin:['LinkedIn','#0A66C2'],youtube:['YouTube','#FF0000'],x:['X','#111111'],threads:['Threads','#111111'],shopee:['Shopee','#EE4D2D']};
+const QPAL={ivory:['Beige & Black','#F6F1E8','#121212'],obsidian:['Black & Beige','#121212','#F6F1E8'],violet:['Ultraviolet','#120B24','#8B5CF6'],electric:['Electric Blue','#070B16','#3B82F6'],mint:['Neon Mint','#050807','#00E5A8'],coral:['Coral Pop','#FFF4EF','#FF6B4A'],gold:['Black Gold','#0C0B09','#D4A054'],slate:['Graphite Tech','#0F172A','#38BDF8']};
+const blankPrep=()=>({name:'',role:'',mobile:'',email:'',channel:'Walk-in',ref:'',socials:{},theme:'ivory',photo:'',liveNow:true});
+let Q=blankPrep();let QDONE=null;
+function prepFields(q,withWho){
+  const who=withWho?`<div class="card"><h3>1 · Who</h3><p class="small muted" style="margin:2px 0 12px">Their email becomes their INTRO sign-in. No password; they get an 8-digit code by email.</p>
+    <div class="grid2"><div class="field"><label for="q-name">Name</label><input id="q-name" data-q="name" value="${esc(q.name)}" placeholder="Ysabel Ignacio" data-focus></div><div class="field"><label for="q-role">What they do <span class="muted" style="font-weight:400">(optional)</span></label><input id="q-role" data-q="role" value="${esc(q.role)}" placeholder="Architect · Ignacio Studio"></div>
+    <div class="field"><label for="q-mob">Mobile</label><input id="q-mob" type="tel" data-q="mobile" value="${esc(q.mobile)}" placeholder="+63 917 000 0000"></div><div class="field"><label for="q-em">Email <span class="muted" style="font-weight:400">(their sign-in)</span></label><input id="q-em" type="email" data-q="email" value="${esc(q.email)}" placeholder="them@example.ph"></div>
+    <div class="field"><label for="q-ch">Where they ordered</label><select id="q-ch" data-q="channel">${CHANNELS.map(c=>`<option ${q.channel===c?'selected':''}>${c}</option>`).join('')}</select></div><div class="field"><label for="q-ref">Chat name or reference <span class="muted" style="font-weight:400">(optional)</span></label><input id="q-ref" data-q="ref" value="${esc(q.ref)}" placeholder="FB: Ysa Ignacio"></div></div></div>`:'';
+  const picked=Object.keys(q.socials);
+  return `${who}
+  <div class="card"><h3>${withWho?'2':'1'} · Links</h3><p class="small muted" style="margin:2px 0 12px">Tap the ones they use and type the username. These become the buttons on their page.</p>
+    <div class="qchips">${Object.entries(QSOC).map(([k,[l,c]])=>`<button type="button" class="qchip ${q.socials[k]!==undefined?'on':''}" data-qsoc="${k}" style="--b:${c}" aria-pressed="${q.socials[k]!==undefined}"><i></i>${l}</button>`).join('')}</div>
+    ${picked.length?`<div class="qrows">${picked.map(k=>`<div class="qrow"><i style="background:${QSOC[k][1]}"></i><input data-qv="${k}" value="${esc(q.socials[k])}" placeholder="${QSOC[k][0]} username" aria-label="${QSOC[k][0]} username" autocapitalize="none"><button type="button" class="x" data-qsocrm="${k}" aria-label="Remove ${QSOC[k][0]}">×</button></div>`).join('')}</div>`:''}</div>
+  <div class="card"><h3>${withWho?'3':'2'} · Look</h3><p class="small muted" style="margin:2px 0 12px">A starter colour and a photo if they sent one. They can change everything later in INTRO Studio.</p>
+    <div class="row" style="gap:18px;align-items:flex-start"><div><div class="tdots">${Object.entries(QPAL).map(([k,[n,bg,tile]])=>`<button type="button" data-qtheme="${k}" class="${q.theme===k?'on':''}" title="${n}" aria-label="${n}" aria-pressed="${q.theme===k}" style="background:${bg}"><i style="background:${tile}"></i></button>`).join('')}</div><p class="small muted" style="margin-top:6px">${(QPAL[q.theme]||QPAL.ivory)[0]}</p></div>
+    <div class="row" style="gap:10px"><span class="qav" style="${q.photo?`background-image:url(${q.photo})`:''}">${q.photo?'':esc((q.name||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase())}</span><label class="btn sm ghost filebtn">${q.photo?'Change photo':'Add photo'}<input type="file" id="q-photo" accept="image/*" hidden></label>${q.photo?'<button type="button" class="btn sm quiet" data-qphotorm>Remove</button>':''}</div></div></div>`;
+}
+function vQuick(){
+  if(QDONE)return quickDone(QDONE);
+  const q=Q;
+  return `<div class="head"><div><p class="lbl">Quick setup</p><h1>Set up a card in two minutes.</h1><p>For a customer in front of you or in chat. Nothing to print, nothing to seal. The full checklist under Orders is only for bulk orders sent by courier.</p></div></div>
+  <div class="stack" style="max-width:860px">
+    ${prepFields(q,true)}
+    <div class="card"><h3>4 · The card</h3>
+      <label class="switch"><input type="checkbox" data-qlive ${q.liveNow?'checked':''}><span class="track"><i></i></span><span><b>Go live now</b><br><span class="small muted">Their page works the moment the card is written. Turn off to keep it hidden until they sign in and press Publish themselves.</span></span></label>
+      <div class="row" style="margin-top:16px"><button class="btn" data-qsave>Save and write the card →</button><button class="btn quiet" data-qdemo>Fill with demo details</button></div>
+      <p class="small muted" style="margin-top:10px">Saving creates the order, the customer and the device code in one go. Writing the card is the only physical step.</p></div>
+  </div>`;
+}
+function quickDone(d){const test=PUBLIC_BASE()+'#view';const prod=`https://${RESOLVER}/t/${d.code}`;
+  return `<div class="head"><div><p class="lbl">Quick setup · done</p><h1>${esc(d.name)} is ${d.liveNow?'live':'ready'}.</h1><p>Order ${d.orderId} · device <span class="code">${d.code}</span> · set up by ${esc(S.staff.name)}.</p></div><span class="pill ${d.liveNow?'active':'released'}"><i></i>${d.liveNow?'Live':'Hidden until they publish'}</span></div>
+  <div class="grid3">
+    <div class="card" style="grid-column:1/-1"><h3>Write the card now</h3><p class="small muted" style="margin:4px 0 12px">Hold the blank card to the back of this phone. Chrome on Android writes it directly. On iPhone, open the NFC Tools app, choose Write → URL, and paste the address.</p>
+      <div class="grid2"><div class="field"><label>Address on the card</label><input id="nfc-url" value="${test}" readonly><p class="hint">Test address for now. Sold cards carry <span class="code">${prod}</span> once the domain is live.</p></div><div class="field"><label>&nbsp;</label><div class="row"><button class="btn" data-nfcwrite="${d.code}">Write with this phone</button><button class="btn ghost" data-copyurl="${test}">Copy address</button></div></div></div>
+      <p id="nfc-res" class="small" style="margin-top:10px;min-height:1.4em"></p></div>
+    <div class="card"><h3>Their sign-in</h3><p class="small">We ${d.liveNow?'have emailed':'will email'} <b>${esc(d.email)}</b> a link to INTRO Studio. They open it, type the 8-digit code, and can edit their page. No setup code, no password.</p><div class="inbox" style="margin-top:10px"><b>Prototype only · their inbox</b>Hi ${esc(d.name.split(' ')[0])}, ${d.liveNow?'your INTRO is live.':'your INTRO is ready.'} Open Studio: <span class="code">${PUBLIC_BASE()}#signin</span></div></div>
+    <div class="card"><h3>Their page</h3><div class="row" style="gap:14px;align-items:flex-start"><div class="qrbox">${qrSvg(prod,3)}</div><div class="small"><p><b>${esc(d.name)}</b>${d.role?`<br>${esc(d.role)}`:''}</p><p class="muted" style="margin-top:6px">${Object.keys(d.socials).filter(k=>d.socials[k]).map(k=>QSOC[k][0]).join(' · ')||'No links yet'}</p><p style="margin-top:10px"><a class="btn sm ghost" href="${PUBLIC_BASE()}#activate" target="_blank" rel="noopener">Open as the customer ↗</a></p></div></div></div>
+  </div>
+  <div class="row" style="margin-top:18px"><button class="btn" data-qnew>Set up another card</button><a class="btn ghost" href="#order-${d.orderId}">Open the order</a></div>`;
+}
+function savePrep(q,{orderId,code}){
+  const prep={code,name:q.name.trim(),role:q.role.trim(),mobile:q.mobile.trim(),email:q.email.trim(),socials:Object.fromEntries(Object.entries(q.socials).filter(([k,v])=>(v||'').trim()).map(([k,v])=>[k,v.trim().replace(/^@/,'')])),theme:q.theme,photo:q.photo||'',liveNow:!!q.liveNow,by:S.staff.name,at:now(),orderId};
+  if(code){try{localStorage.setItem('intro-prepared',JSON.stringify(prep))}catch{}}
+  return prep;
+}
+function quickSave(){const q=Q;if(!q.name.trim()){toast('Their name is needed');return}if(!validEmail(q.email.trim())){toast('A valid email is needed: it is their sign-in');return}
+  const id='INTRO-'+String(S.seq.order++).padStart(5,'0');let code;do{code=newDeviceCode()}while(dev(code));const cid='c'+(S.customers.length+1);const t=now();
+  const pers=[q.role,Object.entries(q.socials).filter(([k,v])=>v).map(([k,v])=>`${QSOC[k][0]} @${v}`).join(', ')].filter(Boolean).join(' · ');
+  S.orders.unshift({id,channel:q.channel,ref:q.ref.trim()||'quick setup',customer:q.name.trim(),email:q.email.trim(),lines:[{sku:'card',qty:1,pers}],status:'shipped',createdAt:t,shippedAt:t,courier:'Handed over',tracking:'',notes:'Quick setup by '+S.staff.name,quick:true});
+  const o=order(id);o.prepared=savePrep(q,{orderId:id,code});
+  S.customers.unshift({id:cid,loginEmail:q.email.trim(),name:q.name.trim(),pcode:code,profileStatus:q.liveNow?'published':'draft',since:t,locked:false,suspended:false,deletion:null,devices:[code],prepared:true});
+  S.devices.unshift({code,sku:'card',state:q.liveNow?'active':'released',orderId:id,batch:null,setupHash:'(quick setup: claim by email)',rotations:0,owner:cid,mode:'profile',lastTap:'',quick:true,events:[['allocated',t],['encoded',t],['verified',t],[q.liveNow?'active':'released',t]]});
+  log('quick.setup',code,`${q.name.trim()} via ${q.channel}${q.liveNow?' · live now':' · hidden until publish'}`);save();
+  QDONE={...o.prepared,orderId:id};Q=blankPrep();route();toast(q.liveNow?'Saved. Page is live. Now write the card.':'Saved. Now write the card.');
+}
+
+/* ---------- orders ---------- */
+function vOrders(){
+  return `<div class="head"><div><p class="lbl">Orders</p><h1>Production orders</h1><p>Orders arrive from Shopify, TikTok Shop or direct messages and are keyed in here with their external reference. The store never touches the resolver.</p></div><button class="btn" data-neworder>New order</button></div>
+  <div class="tbl"><table><thead><tr><th>Order</th><th>Channel · ref</th><th>Customer</th><th>Lines</th><th>Status</th><th>Created</th></tr></thead><tbody>${S.orders.map(o=>`<tr class="clk" data-go="#order-${o.id}"><td><a href="#order-${o.id}"><b>${o.id}</b></a></td><td>${o.channel} <span class="code">${esc(o.ref)}</span></td><td>${esc(o.customer)}<br><span class="small muted">${mask(o.email)}</span></td><td>${o.lines.map(l=>`${l.qty}× ${SKUS[l.sku]}`).join(', ')}</td><td><span class="pill ${o.status==='in production'?'production':o.status}"><i></i>${o.status}</span></td><td class="tnum">${fmtD(o.createdAt)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function vOrder(id){const o=order(id);if(!o)return '<p>Order not found.</p>';const devs=S.devices.filter(d=>d.orderId===o.id);const b=o.batch?batch(o.batch):null;const canP=can('production');
+  const allLocked=devs.length&&devs.every(d=>!['allocated','encoded','verified'].includes(d.state));const allPacked=devs.length&&devs.every(d=>['packed','released','active','paused','lost'].includes(d.state));
+  const steps=[
+    {t:'Allocate codes',d:'One device code, one setup code and one QR per unit.',ok:!!b,act:!b&&canP?`<button class="btn sm" data-allocate="${o.id}">Allocate ${o.lines.reduce((a,l)=>a+l.qty,0)} devices</button>`:b?`<a class="small" href="#batch-${b.id}">Batch ${b.id}</a>`:''},
+    {t:'Print the QR sheet',d:'Printed on the card backs before encoding.',ok:!!b&&!!b.printedQR,act:b?`<a class="btn sm ghost" href="#print-qr-${b.id}">QR sheet</a>`:''},
+    {t:'Print the inserts',d:'15-digit setup codes, shown once. Fold and seal.',ok:!!b&&!!b.printedIns,act:b&&!b.sealed?`<a class="btn sm ghost" href="#print-ins-${b.id}">Insert sheet</a>`:b&&b.sealed?'<span class="small muted">Printed and sealed</span>':''},
+    {t:'Encode and lock',d:'Write the chip URL, read it back, lock.',ok:!!allLocked,act:b&&!allLocked?`<a class="btn sm ghost" href="#batch-${b.id}">Open batch</a>`:''},
+    {t:'Pack-verify',d:'Each insert matched to its card before the box is sealed.',ok:!!allPacked,act:b&&allLocked&&!allPacked?`<a class="btn sm ghost" href="#batch-${b.id}">Verify in batch</a>`:''},
+    {t:'Ship',d:'Courier and tracking. Devices become “unclaimed” in the field.',ok:o.status==='shipped',act:''}
+  ];
+  const ship=o.status==='shipped'?`<div class="callout good small">Shipped ${fmt(o.shippedAt)} · ${esc(o.courier||'courier')}${o.tracking?` · tracking <span class="code">${esc(o.tracking)}</span>`:''}</div><div class="row" style="margin-top:10px"><a class="btn sm ghost" href="#print-slip-${o.id}">Packing slip</a></div>`
+    :allPacked&&canP?`<div class="grid2"><div class="field"><label for="sh-c">Courier</label><select id="sh-c"><option>LBC</option><option>J&T Express</option><option>Lalamove</option><option>Grab Express</option><option>Pickup</option></select></div><div class="field"><label for="sh-t">Tracking number <span class="muted" style="font-weight:400">(optional)</span></label><input id="sh-t" placeholder="e.g. 1234 5678 9012"></div></div><div class="row" style="margin-top:12px"><button class="btn" data-ship="${o.id}">Mark shipped</button><a class="btn ghost" href="#print-slip-${o.id}">Packing slip</a></div>`
+    :`<p class="small muted">Shipping unlocks when every device is pack-verified.${canP?'':' Production role needed.'}</p>`;
+  return `<div class="head"><div><p class="lbl"><a href="#orders">Orders</a> · ${o.id}</p><h1>${esc(o.customer)}</h1><p>${o.channel} <span class="code">${esc(o.ref)}</span> · ${mask(o.email)} · created ${fmtD(o.createdAt)}</p></div><span class="pill ${o.status==='in production'?'production':o.status}"><i></i>${o.status}</span></div>
+  <div class="grid3">
+    <div class="card" style="grid-column:1/-1"><h3>Lines</h3><div class="tbl" style="margin-top:10px"><table><thead><tr><th>Product</th><th class="num">Qty</th><th>Personalisation brief</th></tr></thead><tbody>${o.lines.map(l=>`<tr><td>${SKUS[l.sku]||l.sku}</td><td class="num">${l.qty}</td><td>${esc(l.pers)}</td></tr>`).join('')}</tbody></table></div>${o.notes?`<p class="small muted" style="margin-top:10px">Notes: ${esc(o.notes)}</p>`:''}</div>
+    ${o.quick?'':`<div class="card" style="grid-column:1/-1"><div class="row between"><div><h3>Set up their page for them</h3><p class="small muted" style="margin-top:2px">${o.prepared?`Prepared by ${esc(o.prepared.by)} · ${fmt(o.prepared.at)} · ${o.prepared.liveNow?'goes live before shipping':'live when they claim'}`:'Optional. Type their links and look now so the card arrives ready. They still claim it once with the setup code and their email.'}</p></div><button class="btn sm ${o.prepared?'ghost':''}" data-prep="${o.id}">${o.prepared?'Edit':'Set up their page'}</button></div></div>`}
+    ${o.quick?`<div class="card" style="grid-column:1/-1"><h3>Quick setup</h3><p class="small muted" style="margin:2px 0 12px">Set up with the customer by ${esc(o.prepared?o.prepared.by:'staff')} · ${o.prepared?fmt(o.prepared.at):''} · ${o.prepared&&o.prepared.liveNow?'page live':'page hidden until they publish'}. No inserts, no setup code: they sign in with their email.</p>${devs.map(d=>`<div class="row between"><span>Card <a href="#device-${d.code}" class="code">${d.code}</a> · <span class="pill ${d.state}"><i></i>${STATE_LABEL[d.state]}</span></span><span class="row"><button class="btn sm" data-nfc="${d.code}">Write chip</button><a class="btn sm ghost" href="${PUBLIC_BASE()}#activate" target="_blank" rel="noopener">Open as the customer ↗</a></span></div>`).join('')}</div>`:`<div class="card" style="grid-column:1/-1"><h3>Prepare and ship <span class="small muted" style="font-weight:400">· bulk orders by courier</span></h3><p class="small muted" style="margin:2px 0 12px">Six steps, in order. Nothing ships until every card has been matched to its insert. Customers in front of you don’t need this: use <a href="#quick">Quick setup</a>.</p>
+      <ol class="shipsteps">${steps.map((st,i)=>`<li class="${st.ok?'ok':''}"><span class="n">${st.ok?'✓':i+1}</span><div class="grow"><b>${st.t}</b><p class="small muted">${st.d}</p></div><div>${st.act}</div></li>`).join('')}</ol>
+      <div style="margin-top:14px">${ship}</div></div>`}
+    ${devs.length&&!o.quick?`<div class="card" style="grid-column:1/-1"><h3>Devices in this order</h3><div class="stack" style="margin-top:10px">${devs.map(d=>`<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--rule)"><span><a href="#device-${d.code}" class="code">${d.code}</a> ${SKUS[d.sku]||d.sku}</span><span class="row"><span class="pill ${d.state}"><i></i>${STATE_LABEL[d.state]}</span>${canP?`<button class="btn sm ghost" data-nfc="${d.code}">Write chip</button>`:''}</span></div>`).join('')}</div></div>`:''}
+  </div>`;
+}
+/* ---------- production ---------- */
+function vProduction(){
+  return `<div class="head"><div><p class="lbl">Production</p><h1>Batches</h1><p>Allocate → print QR sheet and inserts → encode → read-back → lock → pack-verify → release. Chips are locked only after read-back and the resolve check pass.</p></div></div>
+  <div class="tbl"><table><thead><tr><th>Batch</th><th>Order</th><th class="num">Devices</th><th>Progress</th><th>Inserts</th><th>Created</th></tr></thead><tbody>${S.batches.map(b=>{const ds=S.devices.filter(d=>d.batch===b.id);const done=ds.filter(d=>!PROD_STEPS.includes(d.state)||d.state==='released').length;return `<tr class="clk" data-go="#batch-${b.id}"><td><a href="#batch-${b.id}"><b>${b.id}</b></a></td><td>${b.orderId}</td><td class="num">${ds.length}</td><td>${done}/${ds.length} released</td><td>${b.sealed?'<span class="pill closed"><i></i>codes purged</span>':'<span class="pill open"><i></i>codes printable</span>'}</td><td class="tnum">${fmtD(b.createdAt)}</td></tr>`}).join('')}</tbody></table></div>
+  <div class="callout info small" style="margin-top:18px;max-width:760px">Setup codes exist in plain text only between allocation and sealing the batch, so the inserts can be printed. After “Seal batch” only the hashes remain, exactly as in production, and a lost insert needs a code rotation.</div>`;
+}
+function vBatch(id){const b=batch(id);if(!b)return '<p>Batch not found.</p>';const ds=S.devices.filter(d=>d.batch===b.id);const canP=can('production');
+  const allPacked=ds.every(d=>!['allocated','encoded','verified','locked'].includes(d.state));
+  return `<div class="head"><div><p class="lbl"><a href="#production">Production</a> · ${b.id}</p><h1>Batch ${b.id}</h1><p>Order <a href="#order-${b.orderId}">${b.orderId}</a> · ${ds.length} devices · created ${fmt(b.createdAt)}</p></div>
+  <div class="row"><a class="btn ghost" href="#print-qr-${b.id}">QR sheet</a>${b.sealed?'<span class="pill closed"><i></i>inserts printed · codes purged</span>':`<a class="btn ghost" href="#print-ins-${b.id}">Insert sheet</a>${canP?`<button class="btn" data-seal="${b.id}">Seal batch</button>`:''}`}</div></div>
+  ${canP?`<div class="row" style="margin-bottom:12px"><span class="small muted">Bulk:</span><button class="btn sm ghost" data-bulk="encode:${b.id}">Encode all allocated</button><button class="btn sm ghost" data-bulk="lock:${b.id}">Lock all verified</button><button class="btn sm ghost" data-bulk="release:${b.id}" ${allPacked?'':'disabled'}>Release all packed</button></div>`:''}
+  <div class="tbl"><table><thead><tr><th>Device</th><th>Product</th><th>Steps</th><th>State</th><th>Next action</th></tr></thead><tbody>${ds.map(d=>`<tr><td><a href="#device-${d.code}" class="code">${d.code}</a></td><td>${SKUS[d.sku]}</td><td><div class="steps">${PROD_STEPS.map(s=>`<span class="${PROD_STEPS.indexOf(s)<PROD_STEPS.indexOf(d.state)||!PROD_STEPS.includes(d.state)?'done':s===d.state?'cur':''}">${STATE_LABEL[s].split(' ')[0]}</span>`).join('')}</div></td><td><span class="pill ${d.state}"><i></i>${STATE_LABEL[d.state]}</span></td><td><span class="row" style="gap:6px">${canP?nextAction(d):'<span class="small muted">Production role</span>'}${canP?`<button class="btn sm ghost" data-nfc="${d.code}">Write chip</button>`:''}</span></td></tr>`).join('')}</tbody></table></div>
+  <div class="grid3" style="margin-top:18px">
+    <div class="card"><h3>Encode</h3><p class="small muted">Web NFC on the production phone: scan the card’s printed QR, write <span class="code">https://${RESOLVER}/t/&lt;code&gt;</span> to the NTAG213, read it back, open the URL once (resolve check). A mismatch between QR and chip quarantines the card.</p></div>
+    <div class="card"><h3>Lock</h3><p class="small muted">Permanent lock bits set only after read-back and resolve check. No password/PACK (ADR-0005). Locking cannot be undone, so the Console records who locked and when.</p></div>
+    <div class="card"><h3>Pack-verify</h3><p class="small muted">Before sealing the box: scan the card, type the setup code from the insert going into that box. The Console compares it to the hash. Match → packed. This is what stops a card shipping with the wrong insert.</p></div>
+  </div>`;
+}
+function nextAction(d){
+  const m={allocated:`<button class="btn sm" data-dev="encode:${d.code}">Encode + read-back</button>`,encoded:`<button class="btn sm" data-dev="verify:${d.code}">Resolve check</button>`,verified:`<button class="btn sm" data-dev="lock:${d.code}">Lock chip</button>`,locked:`<button class="btn sm" data-dev="pack:${d.code}">Pack-verify</button>`,packed:`<button class="btn sm" data-dev="release:${d.code}">Release</button>`};
+  return m[d.state]||'<span class="small muted">In the field</span>';
+}
+
+/* ---------- print sheets ---------- */
+function vPrint(arg){const [kind,bid]=[arg.split('-')[0],arg.slice(arg.indexOf('-')+1)];
+  if(kind==='slip'){const o=order(bid);if(!o)return '<p>Order not found.</p>';const ds=S.devices.filter(d=>d.orderId===o.id);return `<div class="printbar"><a class="btn ghost sm" href="#order-${o.id}">Back to order</a><button class="btn sm" data-print>Print</button><span class="small muted">Goes in the box. Device codes only; never the setup codes.</span></div>
+    <div class="sheet"><div class="row between" style="margin-bottom:12px"><span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO" style="height:14px;display:inline"></span><span class="small" style="color:#666">Packing slip · ${o.id} · ${fmtD(now())}</span></div>
+    <h2>${esc(o.customer)}</h2><p class="small" style="color:#444">${o.channel} ${esc(o.ref)} · ${mask(o.email)}</p>
+    <div class="tbl" style="margin-top:12px;border-color:#ddd;background:#fff"><table style="min-width:0;color:#111"><thead><tr><th style="background:#f2f2f2;color:#333">Item</th><th style="background:#f2f2f2;color:#333" class="num">Qty</th><th style="background:#f2f2f2;color:#333">Device codes</th></tr></thead><tbody>${o.lines.map(l=>`<tr><td style="border-color:#eee">${SKUS[l.sku]||l.sku}</td><td class="num" style="border-color:#eee">${l.qty}</td><td style="border-color:#eee;font-family:var(--mono);font-size:11px">${ds.filter(d=>d.sku===l.sku).map(d=>d.code).join(', ')||'—'}</td></tr>`).join('')}</tbody></table></div>
+    <div style="margin-top:14px;font-size:9pt;color:#444;line-height:1.5"><b style="color:#111">Inside this box</b><br>Your INTRO, a sealed insert with your setup code, and a thank-you card.<br><b style="color:#111">To activate</b>: tap your INTRO with your phone or scan its QR, choose “I own this INTRO”, and enter the code from the insert. Keep the insert sealed until then.</div>
+    <div style="margin-top:14px;font-size:8pt;color:#777">Packed by ______________ · Checked by ______________ · ${esc(o.courier||'Courier')} ${esc(o.tracking||'')}</div></div>`}
+  const b=batch(bid);if(!b)return '<p>Batch not found.</p>';const ds=S.devices.filter(d=>d.batch===b.id);
+  if(kind==='qr'&&!b.printedQR){b.printedQR=true;save()} if(kind==='ins'&&!b.sealed&&!b.printedIns){b.printedIns=true;save()}
+  if(kind==='qr')return `<div class="printbar"><a class="btn ghost sm" href="#batch-${b.id}">Back to batch</a><button class="btn sm" data-print>Print</button><span class="small muted">QR 18 mm, error correction M, 4-module quiet zone. Encodes <span class="code">https://${RESOLVER}/t/&lt;code&gt;</span>. Printing from this preview may be blocked; the local file prints normally.</span></div>
+    <div class="sheet"><h2>QR sheet · ${b.id} · order ${b.orderId} · ${ds.length} devices</h2><div class="qrgrid">${ds.map(d=>`<div class="qrcell">${qrSvg(`https://${RESOLVER}/t/${d.code}`,3)}<span class="c">${d.code}</span><span class="s">${SKUS[d.sku]}</span></div>`).join('')}</div></div>`;
+  if(b.sealed)return `<div class="printbar"><a class="btn ghost sm" href="#batch-${b.id}">Back to batch</a></div><div class="sheet"><h2>Inserts for ${b.id}</h2><p>This batch is sealed. Setup codes were purged after printing; only hashes remain. To reissue one insert, rotate that device’s code from its device page.</p></div>`;
+  return `<div class="printbar"><a class="btn ghost sm" href="#batch-${b.id}">Back to batch</a><button class="btn sm" data-print>Print</button><span class="small muted">Fold-and-seal inserts. One per box, matched at pack-verify. Codes shown once.</span></div>
+    <div class="sheet"><h2>Insert sheet · ${b.id} · ${ds.length} inserts</h2><div class="insgrid">${ds.map(d=>`<div class="ins"><span class="t">Your INTRO setup code</span><span class="k">${fmtSetup(b.plain[d.code]||'···············')}</span><span class="d">1. Tap your new INTRO with your own phone, or scan the QR on its back.<br>2. Choose “I own this INTRO. Set it up.”<br>3. Enter this code, then your email.<br>Keep this insert until you have activated. Never share the code.</span><span class="f"><span class="wmk"><img class="wmimg l" src="brand/wordmark-obsidian.png" alt="INTRO"><img class="wmimg d" src="brand/wordmark-ivory.png" alt=""></span><span>${SKUS[d.sku]} · ${d.code}</span></span></div>`).join('')}</div></div>`;
+}
+
+/* ---------- devices ---------- */
+let devFilter={q:'',state:''};
+function vDevices(){
+  const list=S.devices.filter(d=>(!devFilter.state||d.state===devFilter.state)&&(!devFilter.q||d.code.includes(devFilter.q.toUpperCase())||(d.orderId||'').includes(devFilter.q)));
+  return `<div class="head"><div><p class="lbl">Devices</p><h1>Every INTRO, by code</h1><p>Universal lookup. Type a device code from a card, a QR, a support message or a tap log.</p></div></div>
+  <div class="row" style="margin-bottom:12px"><input type="search" id="dq" placeholder="Device code or order, e.g. 7KQ4M2XD" value="${esc(devFilter.q)}" style="max-width:320px"><select id="ds" style="max-width:220px"><option value="">All states</option>${STATES.map(s=>`<option value="${s}" ${devFilter.state===s?'selected':''}>${STATE_LABEL[s]}</option>`).join('')}</select><span class="small muted tnum">${list.length} of ${S.devices.length}</span></div>
+  <div class="tbl"><table><thead><tr><th>Code</th><th>Product</th><th>State</th><th>Opens</th><th>Owner</th><th>Order</th><th>Last tap</th></tr></thead><tbody>${list.map(d=>`<tr class="clk" data-go="#device-${d.code}"><td><a href="#device-${d.code}" class="code">${d.code}</a>${d.canary?' <span class="pill"><i></i>canary</span>':''}</td><td>${SKUS[d.sku]}</td><td><span class="pill ${d.state}"><i></i>${STATE_LABEL[d.state]}</span></td><td>${d.mode==='direct'?'Direct link':'Profile'}</td><td>${d.owner?`<a href="#customer-${d.owner}">${esc(cust(d.owner)?.name||d.owner)}</a>`:'<span class="muted">—</span>'}</td><td>${d.orderId}</td><td class="tnum">${ago(d.lastTap)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function vDevice(code){const d=dev(code);if(!d)return `<p>No device <span class="code">${esc(code)}</span>. ${deviceCodeValid(code)?'Valid check digit, but never allocated.':'Check digit fails: a typo, or not an INTRO code.'}</p>`;
+  const o=cust(d.owner);const sup=can('support'),prod=can('production');
+  return `<div class="head"><div><p class="lbl"><a href="#devices">Devices</a> · ${d.code}</p><h1>${SKUS[d.sku]} <span class="code" style="font-size:.6em;vertical-align:middle">${d.code}</span></h1><p>Order <a href="#order-${d.orderId}">${d.orderId}</a> · batch <a href="#batch-${d.batch}">${d.batch}</a> · chip and QR <span class="code">https://${RESOLVER}/t/${d.code}</span></p></div><span class="pill ${d.state}"><i></i>${STATE_LABEL[d.state]}</span></div>
+  <div class="grid3">
+    <div class="card"><h3>What a tap does now</h3><p class="small" style="margin-top:6px">${tapOutcome(d)}</p><p class="small muted" style="margin-top:8px">Last tapped ${ago(d.lastTap)}. Tap events keep only time, outcome and coarse device class.</p></div>
+    <div class="card"><h3>Owner</h3>${o?`<p class="small"><a href="#customer-${o.id}">${esc(o.name)}</a> · ${mask(o.loginEmail)}<br>Profile <span class="code">/p/${o.pcode}</span> · ${o.profileStatus}</p>`:'<p class="small muted">Unclaimed. The first person to tap it and present the setup code becomes the owner.</p>'}<p class="small muted" style="margin-top:8px">Setup code: stored as hash only · rotated ${d.rotations}×</p></div>
+    <div class="card"><h3>Actions</h3><div class="row" style="margin-top:8px">
+      ${sup?`<button class="btn sm ghost" data-dev="rotate:${d.code}" ${['retired','blocked'].includes(d.state)?'disabled':''}>Rotate setup code</button>`:''}
+      ${sup&&d.owner?`<button class="btn sm ghost" data-dev="resetclaim:${d.code}">Reset claim</button>`:''}
+      ${sup&&d.state!=='blocked'&&d.state!=='retired'?`<button class="btn sm danger" data-dev="block:${d.code}">Block</button>`:''}
+      ${sup&&d.state==='blocked'?`<button class="btn sm ghost" data-dev="unblock:${d.code}">Unblock</button>`:''}
+      ${(sup||prod)&&d.state!=='retired'?`<button class="btn sm danger" data-dev="retire:${d.code}">Retire</button>`:''}
+      ${!sup&&!prod?'<span class="small muted">Read-only for your role.</span>':''}</div>
+      <p class="small muted" style="margin-top:10px">Rotate: lost insert before activation. Reset claim: detaches the owner so a returned card can be re-sold; the profile is untouched. Block: abuse; the tap shows “not available”. Retire: destroyed or recalled hardware.</p></div>
+    <div class="card" style="grid-column:1/-1"><h3>Verify a setup code</h3><p class="small muted" style="margin:4px 0 10px">What the activation server does: hash what the customer typed with this device’s code and compare. Never a lookup by code alone.</p><div class="row"><input id="vc" inputmode="numeric" placeholder="15 digits" style="max-width:260px"><button class="btn sm" data-verify="${d.code}">Check</button><span id="vres" class="small"></span></div></div>
+    <div class="card" style="grid-column:1/-1"><h3>History</h3><div class="timeline" style="margin-top:8px">${[...d.events].reverse().map(([s,t])=>`<div><span class="t">${fmt(t)}</span><span><span class="pill ${s}"><i></i>${STATE_LABEL[s]||s}</span></span></div>`).join('')}</div></div>
+  </div>`;
+}
+function tapOutcome(d){const o=cust(d.owner);
+  switch(d.state){case 'active':return o&&o.suspended?'Profile suspended by staff → “This INTRO isn’t available right now.”':d.mode==='direct'?'Opens the owner’s stored Direct Link destination.':`Opens the published profile <span class="code">/p/${o?.pcode}</span>.`;
+  case 'released':return 'Shows “This INTRO isn’t set up yet” with the activation start. Only the holder of the matching setup code can claim it.';
+  case 'paused':return 'Owner paused it → “This INTRO is paused.”';case 'lost':return 'Owner reported it lost → finder page, no owner details.';case 'blocked':return 'Blocked by staff → “not available”.';case 'retired':return 'Retired → not found page.';default:return 'Not in the field yet. The chip URL resolves to a “not yet released” page so a leaked card cannot be activated.'}}
+
+/* ---------- customers ---------- */
+function vCustomers(){return `<div class="head"><div><p class="lbl">Customers</p><h1>Accounts</h1><p>Lookup by login email or device. Staff never edit profile content; they can lock sign-in, suspend a profile, or process deletion.</p></div></div>
+  <div class="tbl"><table><thead><tr><th>Name</th><th>Login email</th><th>Profile</th><th>Devices</th><th>Flags</th><th>Since</th></tr></thead><tbody>${S.customers.map(c=>`<tr class="clk" data-go="#customer-${c.id}"><td><a href="#customer-${c.id}"><b>${esc(c.name)}</b></a></td><td>${mask(c.loginEmail)}</td><td><span class="code">/p/${c.pcode}</span> · ${c.suspended?'suspended':c.profileStatus}</td><td>${c.devices.length}</td><td>${c.locked?'<span class="pill lost"><i></i>sign-in locked</span>':''}${c.deletion?'<span class="pill paused"><i></i>deleting</span>':''}</td><td class="tnum">${fmtD(c.since)}</td></tr>`).join('')}</tbody></table></div>`}
+function vCustomer(id){const c=cust(id);if(!c)return '<p>Not found.</p>';const sup=can('support');
+  return `<div class="head"><div><p class="lbl"><a href="#customers">Customers</a></p><h1>${esc(c.name)}</h1><p>${mask(c.loginEmail)} · account since ${fmtD(c.since)} · profile <span class="code">/p/${c.pcode}</span> (${c.suspended?'suspended by staff':c.profileStatus})</p></div></div>
+  <div class="grid3">
+    <div class="card"><h3>Devices</h3><div class="stack" style="margin-top:8px">${c.devices.map(code=>{const d=dev(code);return d?`<a class="small" href="#device-${code}"><span class="code">${code}</span> ${SKUS[d.sku]} · <span class="pill ${d.state}"><i></i>${STATE_LABEL[d.state]}</span></a>`:''}).join('')}</div>${sup?`<button class="btn sm ghost" style="margin-top:12px" data-repl="${c.id}">Issue replacement card</button>`:''}<p class="small muted" style="margin-top:8px">A replacement is a new device allocated to the same account; the profile never changes.</p></div>
+    <div class="card"><h3>Safety actions</h3><div class="row" style="margin-top:8px">${sup?`<button class="btn sm ghost" data-cust="${c.locked?'unlock':'lock'}:${c.id}">${c.locked?'Unlock sign-in':'Lock sign-in'}</button><button class="btn sm ghost" data-cust="${c.suspended?'unsuspend':'suspend'}:${c.id}">${c.suspended?'Lift suspension':'Suspend profile'}</button>${c.deletion?`<button class="btn sm ghost" data-cust="canceldel:${c.id}">Cancel deletion</button>`:`<button class="btn sm danger" data-cust="delete:${c.id}">Start deletion</button>`}`:'<span class="small muted">Support role needed.</span>'}</div><p class="small muted" style="margin-top:10px">${c.deletion?`Deletion scheduled for ${fmtD(c.deletion)} (14-day grace). Profile offline, cards show “not available”.`:'Lock sign-in: suspected account takeover. Suspend: policy violation; the public page shows “not available” while devices stay attached.'}</p></div>
+    <div class="card"><h3>What staff cannot do</h3><p class="small muted" style="margin-top:6px">Read the private login email in full, edit the profile, see sign-in codes, or move a device to another account without a reset-claim recorded in the audit log. Assisted setup is a Phase 2 feature with customer consent.</p></div>
+  </div>`;
+}
+
+/* ---------- reports ---------- */
+function vReports(){const sup=can('support');return `<div class="head"><div><p class="lbl">Reports</p><h1>Abuse queue</h1><p>From the “Report” link on every public page. Phishing and impersonation first.</p></div></div>
+  <div class="stack">${S.reports.map(r=>`<div class="card"><div class="row between"><div><b>${r.id}</b> · ${esc(r.reason)} · <span class="code">${esc(r.target)}</span> <span class="small muted">· ${fmt(r.at)}</span><p class="small" style="margin-top:6px">${esc(r.detail)}</p></div><span class="pill ${r.status}"><i></i>${r.status}</span></div>${r.status==='open'&&sup?`<div class="row" style="margin-top:12px"><button class="btn sm ghost" data-rep="dismiss:${r.id}">Dismiss</button><button class="btn sm ghost" data-rep="suspend:${r.id}">Suspend profile</button><button class="btn sm danger" data-rep="block:${r.id}">Block device</button></div>`:''}</div>`).join('')}</div>`}
+
+/* ---------- codes & QR explainer ---------- */
+function vCodes(){const dc=newDeviceCode(),sc=newSetupCode();
+  return `<div class="head"><div><p class="lbl">Codes & QR</p><h1>How every INTRO is identified</h1><p>Three artefacts per device, all generated here. Customers never create or upload any of them.</p></div></div>
+  <div class="grid3">
+    <div class="card"><h3>1 · Device code</h3><p class="small" style="margin-top:6px">8 characters, Crockford base32 (no I, L, O, U so it can be read aloud) with a Luhn mod-32 check character. Lives in the chip URL and the QR: <span class="code">https://${RESOLVER}/t/${dc}</span>. Public, not secret.</p><p class="codes" style="margin-top:10px">${dc}</p><p class="small muted">Fresh example each visit. Typing <span class="code">${dc.slice(0,7)}X</span> fails the check: <b>${deviceCodeValid(dc.slice(0,7)+'X')?'valid':'invalid'}</b>.</p></div>
+    <div class="card"><h3>2 · Setup code</h3><p class="small" style="margin-top:6px">15 digits: 14 random + a Damm check digit, so a typo is caught before it reaches the server. Generated per device at allocation, printed once on that device’s insert, stored only as a bcrypt hash bound to the device code. No expiry. Five wrong tries pause the card for an hour.</p><p class="codes" style="margin-top:10px">${fmtSetup(sc)}</p><p class="small muted">Check digit valid: <b>${setupValid(sc)?'yes':'no'}</b>. Change one digit and it fails.</p></div>
+    <div class="card"><h3>3 · QR code</h3><p class="small" style="margin-top:6px">Generated from the device code, error correction M, 18 mm with a 4-module quiet zone, printed on the card back. Points to the same <span class="code">/t/${dc}</span> address as the chip, so QR and tap can never disagree. The Profile QR and Offline Contact QR in Studio are generated too.</p><div style="background:#fff;padding:10px;border-radius:10px;width:fit-content;margin-top:10px">${qrSvg(`https://${RESOLVER}/t/${dc}`,3).replace('<svg','<svg style="width:96px;height:96px;display:block"')}</div></div>
+    <div class="card" style="grid-column:1/-1"><h3>Why not one universal code</h3><p class="small" style="margin-top:6px">A universal or batch code means one leaked insert claims any card in the field. Per-device codes bound to the device hash limit a leak to one card, which can then be rotated. The cost is a production step: print each insert, match it to its card, and verify the match at pack time. That is the pack-verify step in every batch.</p></div>
+  </div>`;
+}
+
+/* ---------- system ---------- */
+let auditQ='';
+function vSystem(){const list=S.audit.filter(a=>!auditQ||JSON.stringify(a).toLowerCase().includes(auditQ.toLowerCase()));
+  return `<div class="head"><div><p class="lbl">System</p><h1>Staff, audit, settings</h1></div></div>
+  <div class="grid3">
+    <div class="card"><h3>Staff</h3><div class="tbl" style="margin-top:10px"><table style="min-width:0"><thead><tr><th>Name</th><th>Role</th><th>MFA</th></tr></thead><tbody>${S.staffList.map(x=>`<tr><td>${esc(x.name)}<br><span class="small muted">${mask(x.email)}</span></td><td>${ROLES[x.role].name}</td><td>${x.mfa?'on':'<span style="color:var(--bad)">off</span>'}</td></tr>`).join('')}</tbody></table></div>${can('system')?'<button class="btn sm ghost" style="margin-top:10px" data-addstaff>Invite staff</button>':''}<p class="small muted" style="margin-top:8px">Owner: everything. Production: batches, encode, lock, pack, ship. Support: devices, customers, reports. Both owners are paged by canary failures.</p></div>
+    <div class="card"><h3>Settings</h3><div class="stack small" style="margin-top:8px"><div><span class="lbl">Resolver host</span><br><span class="code">${RESOLVER}</span> <span class="muted">· placeholder until OD-01</span></div><div><span class="lbl">Chip</span><br>NTAG213 · permanent lock · no password</div><div><span class="lbl">Blocklists</span><br>URL shorteners (8) · Web Risk at publish + daily</div><div><span class="lbl">Backups</span><br>Nightly, encrypted · last ${fmt(S.canaries.backup)}</div></div></div>
+    <div class="card" style="grid-column:1/-1"><div class="row between"><h3>Audit log</h3><input type="search" id="aq" placeholder="Filter" value="${esc(auditQ)}" style="max-width:260px"></div><p class="small muted" style="margin:4px 0 10px">Append-only. Every staff action and every claim, with who and when. ${list.length} entries.</p><div class="tbl"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead><tbody>${list.slice(0,80).map(a=>`<tr><td class="tnum">${fmt(a.t)}</td><td>${esc(a.by)}</td><td><span class="code">${esc(a.action)}</span></td><td>${esc(a.target)}</td><td class="small">${esc(a.detail)}</td></tr>`).join('')}</tbody></table></div></div>
+  </div>`;
+}
+
+/* ---------- modal ---------- */
+function modal(html){$('#layer').innerHTML=`<div class="modal" data-close><div class="in" role="dialog" aria-modal="true">${html}</div></div>`;setTimeout(()=>{($('#layer [data-focus]')||$('#layer input,#layer select'))?.focus()},0)}
+const closeModal=()=>{$('#layer').innerHTML=''};
+
+/* ---------- actions ---------- */
+async function allocate(oid){const o=order(oid);const n=o.lines.reduce((a,l)=>a+l.qty,0);const bid='B-'+String(S.seq.batch++).padStart(4,'0');const b={id:bid,orderId:oid,createdAt:now(),sealed:false,plain:{}};
+  for(const l of o.lines)for(let i=0;i<l.qty;i++){let code;do{code=newDeviceCode()}while(dev(code));const sc=newSetupCode();b.plain[code]=sc;S.devices.push({code,sku:l.sku,state:'allocated',orderId:oid,batch:bid,setupHash:await setupHash(sc,code),rotations:0,owner:null,mode:DIRECT_SKUS.includes(l.sku)?'direct':'profile',lastTap:'',events:[['allocated',now()]]})}
+  S.batches.push(b);o.batch=bid;o.status='in production';log('batch.allocate',bid,`${n} devices for ${oid}`);save();location.hash='#batch-'+bid;toast(`${n} devices allocated. Print the QR sheet and inserts.`)}
+function refreshOrder(oid){const o=order(oid);if(!o||!o.batch)return;const ds=S.devices.filter(d=>d.batch===o.batch);if(o.status!=='shipped'){o.status=ds.every(d=>d.state==='packed'||d.state==='released')?'ready':'in production'}}
+
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-si],[data-role],[data-signout],[data-go],[data-neworder],[data-qsoc],[data-qsocrm],[data-qtheme],[data-qsave],[data-qdemo],[data-qnew],[data-qphotorm],[data-prep],[data-prepsave],[data-allocate],[data-ship],[data-seal],[data-bulk],[data-dev],[data-print],[data-nfc],[data-nfcwrite],[data-copyurl],[data-verify],[data-cust],[data-repl],[data-rep],[data-addstaff],[data-close],[data-closebtn],[data-create]');
+  if(!t)return;const ds=t.dataset;
+  if(ds.role){A.role=ds.role;route();return}
+  if(ds.si){if(ds.si==='code'){const em=$('#se').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Enter a valid work email');return}A.email=em;A.sent=String(Math.floor(1e7+Math.random()*9e7));A.step='code'}
+    else if(ds.si==='back'){A.step='email'}
+    else if(ds.si==='mfa'){if($('#sc').value!==A.sent){toast('Code doesn’t match');return}A.step='mfa'}
+    else if(ds.si==='done'){if($('#sm').value!=='000000'){toast('Authenticator code doesn’t match');return}const st=S.staffList.find(x=>x.role===A.role)||S.staffList[0];S.staff={name:st.name,role:st.role,mfa:true,email:A.email};log('staff.signin',st.name,'email code + MFA');save();A.step='email';location.hash='#dash'}
+    route();return}
+  if(ds.signout!==undefined){log('staff.signout',S.staff.name,'');S.staff=null;save();location.hash='#signin';route();return}
+  if(ds.go){location.hash=ds.go;return}
+  if(ds.close!==undefined){if(e.target!==t)return;closeModal();return}
+  if(ds.closebtn!==undefined){closeModal();return}
+  if(ds.print!==undefined){try{window.print()}catch{}toast('If no print dialog opened, open the local file to print.');return}
+  const PQ=()=>($('#layer .in')&&$('[data-prep="1"]',$('#layer .in'))&&PREP)?PREP:Q;
+  if(ds.qsoc){const q=PQ();if(q.socials[ds.qsoc]===undefined){q.socials[ds.qsoc]='';rerenderPrep(`input[data-qv="${ds.qsoc}"]`)}else if(!q.socials[ds.qsoc].trim()){delete q.socials[ds.qsoc];rerenderPrep(`[data-qsoc="${ds.qsoc}"]`)}else{const el=$(`input[data-qv="${ds.qsoc}"]`);if(el)el.focus()}return}
+  if(ds.qsocrm){const q=PQ();delete q.socials[ds.qsocrm];rerenderPrep(`[data-qsoc="${ds.qsocrm}"]`);return}
+  if(ds.qtheme){PQ().theme=ds.qtheme;rerenderPrep(`[data-qtheme="${ds.qtheme}"]`);return}
+  if(ds.qphotorm!==undefined){PQ().photo='';rerenderPrep();return}
+  if(ds.qdemo!==undefined){Object.assign(Q,{name:'Marco Dela Cruz',role:'Realtor · Northpoint Realty',mobile:'+63 917 555 0199',email:'marco.dc@example.ph',channel:'Messenger',ref:'FB: Marco Dela Cruz',socials:{instagram:'marco.sells.dipolog',facebook:'marcodelacruzrealty',tiktok:'marco.sells'},theme:'electric'});route();return}
+  if(ds.qsave!==undefined){quickSave();return}
+  if(ds.qnew!==undefined){QDONE=null;Q=blankPrep();route();return}
+  if(ds.prep){const o=order(ds.prep);PREP=Object.assign(blankPrep(),o.prepared||{},{liveNow:o.prepared?!!o.prepared.liveNow:false});if(!o.prepared){PREP.name=o.customer;PREP.email=o.email;PREP.channel=o.channel}modal(prepModal(o));return}
+  if(ds.prepsave){const o=order(ds.prepsave);const d=S.devices.find(x=>x.orderId===o.id);o.prepared=savePrep(PREP,{orderId:o.id,code:d?d.code:''});log('order.prepare',o.id,`page prepared · ${PREP.liveNow?'live before shipping':'live on claim'}`);save();closeModal();route();toast('Saved. The card will arrive with this page ready.');return}
+  if(ds.neworder!==undefined){modal(`<h2>New order</h2><p class="small muted" style="margin:4px 0 14px">Key in the external reference exactly. Prices come from the catalog; nothing is charged here.</p><div class="stack"><div class="grid2"><div class="field"><label>Channel</label><select id="n-ch">${CHANNELS.map(c=>`<option>${c}</option>`).join('')}</select></div><div class="field"><label>External ref</label><input id="n-ref" placeholder="#1044 / TT-…"></div></div><div class="grid2"><div class="field"><label>Customer</label><input id="n-cu" placeholder="Name or business"></div><div class="field"><label>Customer email</label><input id="n-em" type="email" placeholder="for the order only"></div></div><div class="grid2"><div class="field"><label>Product</label><select id="n-sku">${Object.entries(SKUS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div><div class="field"><label>Quantity</label><input id="n-q" type="number" min="1" max="50" value="1"></div></div><div class="field"><label>Personalisation brief</label><textarea id="n-p" placeholder="Names, roles, colours, logo reference…"></textarea></div></div><div class="row" style="margin-top:16px"><button class="btn" data-create>Create order</button><button class="btn quiet" data-closebtn>Cancel</button></div>`);return}
+  if(ds.create!==undefined){const cu=$('#n-cu').value.trim(),ref=$('#n-ref').value.trim(),em=$('#n-em').value.trim();if(!cu||!ref){toast('Customer and reference are required');return}if(em&&!validEmail(em)){toast('Enter a valid customer email');return}const id='INTRO-'+String(S.seq.order++).padStart(5,'0');S.orders.unshift({id,channel:$('#n-ch').value,ref,customer:cu,email:em,lines:[{sku:$('#n-sku').value,qty:Math.max(1,Math.min(50,+$('#n-q').value||1)),pers:$('#n-p').value.trim()}],status:'new',createdAt:now(),notes:''});log('order.create',id,`${$('#n-ch').value} ${ref}`);save();closeModal();location.hash='#order-'+id;toast('Order created');return}
+  if(ds.allocate){if(!can('production'))return;await allocate(ds.allocate);return}
+  if(ds.ship){const o=order(ds.ship);o.status='shipped';o.shippedAt=now();o.courier=$('#sh-c')?.value||'';o.tracking=($('#sh-t')?.value||'').trim();for(const d of S.devices.filter(x=>x.orderId===o.id&&x.state==='packed'))setState(d,'released','shipped with order');log('order.ship',o.id,`${o.courier} ${o.tracking}`);save();route();toast('Marked shipped. Devices are now unclaimed in the field.');return}
+  if(ds.seal){const b=batch(ds.seal);modal(`<h2>Seal batch ${b.id}?</h2><p class="small" style="margin:8px 0 14px">Confirm the insert sheet is printed and matched. After sealing, the plain setup codes are purged and only hashes remain. A lost insert will need a code rotation.</p><div class="row"><button class="btn" data-dev="sealnow:${b.id}">Seal and purge codes</button><button class="btn quiet" data-closebtn>Not yet</button></div>`);return}
+  if(ds.bulk){const [act,bid]=ds.bulk.split(':');const list=S.devices.filter(d=>d.batch===bid);let n=0;
+    for(const d of list){if(act==='encode'&&d.state==='allocated'){setState(d,'encoded','Web NFC write');setState(d,'verified','read-back + resolve check OK');n++}if(act==='lock'&&d.state==='verified'){setState(d,'locked','permanent lock');n++}if(act==='release'&&d.state==='packed'){setState(d,'released','');n++}}
+    refreshOrder(batch(bid).orderId);save();route();toast(`${n} device${n===1?'':'s'} updated`);return}
+  if(ds.dev){const [act,code]=ds.dev.split(':');
+    if(act==='invite'){const n=$('#st-n').value.trim(),em=$('#st-e').value.trim();if(!n||!validEmail(em)){toast('Name and a valid work email are needed');return}S.staffList.push({id:'s'+Date.now(),name:n,email:em,role:$('#st-r').value,mfa:false});log('staff.invite',n,$('#st-r').value);save();closeModal();route();toast('Invite sent. MFA enrolment required at first sign-in.');return}
+    if(act==='sealnow'){const b=batch(code);b.sealed=true;b.plain={};log('batch.seal',b.id,'plain setup codes purged');save();closeModal();route();toast('Batch sealed');return}
+    const d=dev(code);if(!d)return;
+    if(act==='encode'){setState(d,'encoded','Web NFC write OK');setState(d,'verified','read-back matched; resolve check 200');toast('Written and read back. Resolve check passed.')}
+    else if(act==='verify'){setState(d,'verified','resolve check 200')}
+    else if(act==='lock'){setState(d,'locked','permanent lock set');toast('Chip locked. This cannot be undone.')}
+    else if(act==='pack'){const b=batch(d.batch);modal(`<h2>Pack-verify ${d.code}</h2><p class="small" style="margin:8px 0 14px">Scan the card (done: <span class="code">${d.code}</span>). Now type the setup code printed on the insert you are putting in this box.</p><div class="field"><label>Setup code from insert</label><input id="pk" inputmode="numeric" placeholder="15 digits" data-focus>${b&&!b.sealed?`<p class="hint">Prototype hint, this batch is unsealed: ${fmtSetup(b.plain[d.code])}</p>`:'<p class="hint">Batch sealed: only the hash is known, exactly like production.</p>'}</div><div class="row" style="margin-top:14px"><button class="btn" data-dev="packcheck:${d.code}">Verify match</button><button class="btn quiet" data-closebtn>Cancel</button></div>`);return}
+    else if(act==='packcheck'){const typed=$('#pk').value.replace(/\D/g,'');if(!setupValid(typed)){toast('Check digit fails: re-read the insert');return}const h=await setupHash(typed,d.code);if(h!==d.setupHash){log('device.packmismatch',d.code,'insert did not match card');save();toast('MISMATCH. Wrong insert for this card. Quarantined.');closeModal();return}setState(d,'packed','insert matched card');closeModal();toast('Match. Packed.')}
+    else if(act==='release'){setState(d,'released','')}
+    else if(act==='rotate'){const sc=newSetupCode();d.setupHash=await setupHash(sc,d.code);d.rotations++;log('device.rotate',d.code,'new setup code issued; old one void');save();modal(`<h2>New setup code for ${d.code}</h2><p class="small" style="margin:8px 0 12px">Shown once. Give it to the verified customer or print a new insert. The old code no longer works.</p><div class="secret codes">${fmtSetup(sc)}</div><div class="row" style="margin-top:14px"><button class="btn" data-closebtn>I have recorded it</button></div>`);route();return}
+    else if(act==='resetclaim'){const c=cust(d.owner);if(c)c.devices=c.devices.filter(x=>x!==d.code);d.owner=null;d.mode='profile';setState(d,'released','claim reset by staff; profile untouched');toast('Claim reset. Device is unclaimed again.')}
+    else if(act==='block'){setState(d,'blocked','staff block')}
+    else if(act==='unblock'){setState(d,d.owner?'active':'released','unblocked')}
+    else if(act==='retire'){setState(d,'retired','hardware retired')}
+    refreshOrder(d.orderId);save();route();return}
+  if(ds.verify){const d=dev(ds.verify);const typed=$('#vc').value.replace(/\D/g,'');const r=$('#vres');if(!setupValid(typed)){r.textContent='Check digit fails before any lookup.';r.style.color='var(--bad)';return}const h=await setupHash(typed,d.code);const ok=h===d.setupHash;r.textContent=ok?'Match: this code would claim this device.':'No match: wrong code for this device.';r.style.color=ok?'var(--good)':'var(--bad)';log('device.verifycode',d.code,ok?'match':'no match');save();return}
+  if(ds.cust){const [act,id]=ds.cust.split(':');const c=cust(id);
+    if(act==='lock'){c.locked=true}if(act==='unlock'){c.locked=false}if(act==='suspend'){c.suspended=true}if(act==='unsuspend'){c.suspended=false}
+    if(act==='delete'){const dt=new Date();dt.setDate(dt.getDate()+14);c.deletion=dt.toISOString();c.suspended=true}if(act==='canceldel'){c.deletion=null;c.suspended=false}
+    log('customer.'+act,c.id,'');save();route();toast('Done. Logged.');return}
+  if(ds.repl){const c=cust(ds.repl);const id='INTRO-'+String(S.seq.order++).padStart(5,'0');S.orders.unshift({id,channel:'Direct',ref:'REPL-'+c.pcode,customer:c.name,email:c.loginEmail,lines:[{sku:'card',qty:1,pers:'Replacement for '+c.pcode+' · price per current list'}],status:'new',createdAt:now(),notes:'Replacement. Attaches to existing account '+c.id+' at claim.',replacementFor:c.id});log('order.replacement',id,'for '+c.id);save();location.hash='#order-'+id;toast('Replacement order created');return}
+  if(ds.rep){const [act,id]=ds.rep.split(':');const r=S.reports.find(x=>x.id===id);r.status='closed';r.resolution=act;
+    if(act!=='dismiss'){const code=r.target.split('/').pop();const d=dev(code);if(d){if(act==='block')setState(d,'blocked','report '+r.id);if(act==='suspend'&&d.owner){cust(d.owner).suspended=true}}}
+    log('report.'+act,r.id,'');save();route();toast('Report closed: '+act);return}
+  if(ds.nfc){const d=dev(ds.nfc);const prod=`https://${RESOLVER}/t/${d.code}`;const test=PUBLIC_BASE()+'#view';modal(`<h2>Write chip · ${d.code}</h2><p class="small muted" style="margin:6px 0 12px">Writes a URL record to an NTAG213 with this phone. Works in Chrome on Android (Web NFC). On iPhone use the NFC Tools app and paste the address. The chip is <b>not</b> locked here; locking happens only after read-back and QC.</p>
+    <div class="field"><label>Production address (final domain)</label><input class="mono" value="${prod}" readonly></div><div class="field" style="margin-top:10px"><label>Test address (this prototype, full-screen customer view)</label><input class="mono" id="nfc-url" value="${esc(test)}"></div>
+    <div class="row" style="margin-top:14px"><button class="btn" data-nfcwrite="${d.code}">Write test address with this phone</button><button class="btn ghost" data-copyurl="${esc(test)}">Copy</button><button class="btn quiet" data-closebtn>Close</button></div><p class="small" id="nfc-res" style="margin-top:10px"></p>`);return}
+  if(ds.copyurl){navigator.clipboard?.writeText(ds.copyurl).then(()=>toast('Address copied')).catch(()=>toast(ds.copyurl));return}
+  if(ds.nfcwrite){const url=$('#nfc-url').value.trim();const res=$('#nfc-res');if(!/^https:\/\//.test(url)){res.textContent='Use a full https:// address.';return}if(!('NDEFReader' in window)){res.textContent='This browser has no Web NFC. Open console.html in Chrome on an Android phone, or use the NFC Tools app on iPhone with the copied address.';return}try{res.textContent='Hold the card to the back of the phone…';const w=new NDEFReader();await w.write({records:[{recordType:'url',data:url}]});res.textContent='Written. Tap the card with another phone to test. Not locked.';log('device.encode.test',ds.nfcwrite,'Web NFC test write (unlocked): '+url);save()}catch(e){res.textContent='Write failed: '+(e&&e.message||e)}return}
+  if(ds.addstaff!==undefined){modal(`<h2>Invite staff</h2><div class="stack" style="margin-top:12px"><div class="field"><label>Name</label><input id="st-n"></div><div class="field"><label>Work email</label><input id="st-e" type="email"></div><div class="field"><label>Role</label><select id="st-r">${Object.entries(ROLES).map(([k,r])=>`<option value="${k}">${r.name}</option>`).join('')}</select></div></div><div class="row" style="margin-top:14px"><button class="btn" data-dev="invite:_">Send invite</button><button class="btn quiet" data-closebtn>Cancel</button></div>`);
+    return}
+});
+document.addEventListener('input',e=>{if(e.target.id==='dq'){devFilter.q=e.target.value;const tb=$('.tbl tbody');if(tb){$('#app').querySelector('.main').innerHTML=vDevices();$('#dq').focus();$('#dq').setSelectionRange(1e3,1e3)}}
+  if(e.target.id==='aq'){auditQ=e.target.value;$('#app').querySelector('.main').innerHTML=vSystem();$('#aq').focus();$('#aq').setSelectionRange(1e3,1e3)}});
+document.addEventListener('change',e=>{if(e.target.id==='ds'){devFilter.state=e.target.value;route()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+if(!location.hash)location.hash=S.staff?'#dash':'#signin';
+ensureHashes().then(()=>{route()});
+</script>
+
+</body>
+</html>
