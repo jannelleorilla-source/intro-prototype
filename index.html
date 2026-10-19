@@ -833,6 +833,7 @@ let A=null; // activation flow state (in memory only)
 function route(){
   syncPrep();
   const h=(location.hash||'#studio').slice(1);const base=h.split('-')[0];
+  if(base!=='start')TAPMISS=false;
   const fn=ROUTES[base]||viewStudio;
   $$('#protonav a').forEach(a=>a.classList.toggle('on',a.dataset.r===base));
   document.body.classList.toggle('is-view',base==='view');document.body.classList.toggle('is-activate',base==='activate'||base==='signin'||base==='start');
